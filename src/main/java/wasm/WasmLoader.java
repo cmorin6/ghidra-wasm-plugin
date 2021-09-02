@@ -156,9 +156,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		boolean x = true;
 		String BLOCK_SOURCE_NAME = "Wasm Section";
 		for (WasmSection section : module.getSections()) {
-//			if(section.getId()==WasmSectionId.SEC_DATA) {
-//				continue;
-//			}
 			Address start = program.getAddressFactory().getDefaultAddressSpace()
 					.getAddress(Utils.HEADER_BASE + section.getSectionOffset());
 			MemoryBlockUtils.createInitializedBlock(program, false, section.getPayload().getName(), start, reader,

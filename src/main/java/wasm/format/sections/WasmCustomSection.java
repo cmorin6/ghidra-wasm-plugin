@@ -46,7 +46,7 @@ public class WasmCustomSection implements WasmPayload {
 
 	@Override
 	public String getName() {
-		return ".custom";
+		return name;
 	}
 
 }
