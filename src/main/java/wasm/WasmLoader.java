@@ -39,16 +39,19 @@ import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.DataUtilities.ClearDataMode;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.listing.Data;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.mem.MemoryConflictException;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.symbol.SymbolUtilities;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import wasm.file.WasmModule;
 import wasm.format.Utils;
@@ -271,6 +274,27 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	}
 
+	protected boolean isValidFunctionName(String functionName) {
+		try {
+			SymbolUtilities.validateName(functionName);
+			return true;
+		} catch (InvalidInputException e) {
+			return false;
+		}
+	}
+
+	protected String extractValidFunctionName(String functionName) {
+		// TODO:
+		// replace with proper parsing to retrieve namespaces and parameter types
+
+		// namepace1::class::method(type ,type) res;
+
+		// strip parameter definition
+		functionName = functionName.split("\\(")[0];
+		functionName = functionName.replaceAll(" ", "");
+		return functionName;
+	}
+
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options, Program program,
 			TaskMonitor monitor, MessageLog log) throws CancelledException, IOException {
@@ -318,9 +342,19 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						WasmSection exports = module.getSection(WasmSectionId.SEC_EXPORT);
 						String methodName = getMethodName(module.getNameSection(),
 								exports == null ? null : (WasmExportSection) exports.getPayload(), i + imports_offset);
-						program.getFunctionManager().createFunction(methodName, methodAddress,
-								new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
-						program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
+
+						if (isValidFunctionName(methodName)) {
+							program.getFunctionManager().createFunction(methodName, methodAddress,
+									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
+							program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
+						} else {
+							String validFuncName = extractValidFunctionName(methodName);
+							Function function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
+									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
+							program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
+							// add the original name as a comment
+							function.setComment(methodName);
+						}
 					}
 					break;
 				}
