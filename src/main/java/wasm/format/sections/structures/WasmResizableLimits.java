@@ -29,12 +29,35 @@ public class WasmResizableLimits implements StructConverter {
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = new StructureDataType("global", 0);
 		structure.add(BYTE, 1, "flags", null);
-		structure.add(new ArrayDataType(BYTE, initial.getLength(), BYTE.getLength()), "mutability", null);
+		structure.add(new ArrayDataType(BYTE, initial.getLength(), BYTE.getLength()), "initial", null);
 		if (flags == 1) {
 			structure.add(new ArrayDataType(BYTE, maximum.getLength(), BYTE.getLength()), "maximum", null);
 		}
 		return structure;
 	}
 
+	public byte getFlags() {
+		return flags;
+	}
+
+	public long getInitial() {
+		return initial.asLong();
+	}
+
+	public long getMaximum() {
+		if (maximum == null) {
+			return -1;
+		}
+		return maximum.asLong();
+	}
+
+	public long getAllocSize() {
+		return Math.max(getInitial(), getMaximum());
+	}
+
+	@Override
+	public String toString() {
+		return "(initial=" + getInitial() + ", max=" + getMaximum() + ")";
+	}
 
 }

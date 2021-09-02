@@ -34,7 +34,6 @@ public class WasmImportEntry implements StructConverter {
 		switch (kind) {
 		case EXT_FUNCTION:
 			function_type = LEB128.readUnsignedValue(reader);
-			;
 			break;
 		case EXT_MEMORY:
 			memory_type = new WasmResizableLimits(reader);
@@ -60,6 +59,10 @@ public class WasmImportEntry implements StructConverter {
 			throw new RuntimeException("Cannot get function type of non-function import");
 		}
 		return (int) function_type.asLong();
+	}
+
+	public WasmResizableLimits getMemoryDefinition() {
+		return memory_type;
 	}
 
 	public String getName() {

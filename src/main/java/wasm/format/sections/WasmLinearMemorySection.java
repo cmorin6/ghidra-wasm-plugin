@@ -17,26 +17,30 @@ public class WasmLinearMemorySection implements WasmPayload {
 
 	private LEB128 count;
 	private List<WasmResizableLimits> limits = new ArrayList<WasmResizableLimits>();
-	
-	public WasmLinearMemorySection (BinaryReader reader) throws IOException {
+
+	public WasmLinearMemorySection(BinaryReader reader) throws IOException {
 		count = LEB128.readUnsignedValue(reader);
-		for (int i =0; i < count.asInt32(); ++i) {
+		for (int i = 0; i < count.asInt32(); ++i) {
 			limits.add(new WasmResizableLimits(reader));
-		}	
+		}
 	}
 
-
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
+	public void addToStructure(Structure structure)
+			throws IllegalArgumentException, DuplicateNameException, IOException {
 		structure.add(new ArrayDataType(BYTE, count.getLength(), BYTE.getLength()), "count", null);
 		for (int i = 0; i < count.asInt32(); ++i) {
-			structure.add(limits.get(i).toDataType(), limits.get(i).toDataType().getLength(), "memory_type_"+i, null);
+			structure.add(limits.get(i).toDataType(), limits.get(i).toDataType().getLength(), "memory_type_" + i, null);
 		}
 	}
 
 	@Override
 	public String getName() {
 		return ".linearMemory";
+	}
+
+	public List<WasmResizableLimits> getMemoryDefinitions() {
+		return limits;
 	}
 
 }
