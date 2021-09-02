@@ -171,8 +171,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		boolean x = false;
 		String MODULE_SOURCE_NAME = "Wasm Module";
 		Address start = program.getAddressFactory().getDefaultAddressSpace().getAddress(Utils.MODULE_BASE);
-		MemoryBlockUtils.createInitializedBlock(program, false, ".module", start, reader, length,
+		MemoryBlock moduleBlock = MemoryBlockUtils.createInitializedBlock(program, false, ".module", start, reader, length,
 				"The full file contents of the Wasm module", MODULE_SOURCE_NAME, r, w, x, log, monitor);
+		// disable all accesses on the module section to prevent auto analysis do recover strings and addresses in it.
+		moduleBlock.setPermissions(false,false,false);
 	}
 
 	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
