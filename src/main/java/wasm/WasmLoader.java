@@ -171,10 +171,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		boolean x = false;
 		String MODULE_SOURCE_NAME = "Wasm Module";
 		Address start = program.getAddressFactory().getDefaultAddressSpace().getAddress(Utils.MODULE_BASE);
-		MemoryBlock moduleBlock = MemoryBlockUtils.createInitializedBlock(program, false, ".module", start, reader, length,
-				"The full file contents of the Wasm module", MODULE_SOURCE_NAME, r, w, x, log, monitor);
-		// disable all accesses on the module section to prevent auto analysis do recover strings and addresses in it.
-		moduleBlock.setPermissions(false,false,false);
+		MemoryBlock moduleBlock = MemoryBlockUtils.createInitializedBlock(program, false, ".module", start, reader,
+				length, "The full file contents of the Wasm module", MODULE_SOURCE_NAME, r, w, x, log, monitor);
+		// disable all accesses on the module section to prevent auto analysis do
+		// recover strings and addresses in it.
+		moduleBlock.setPermissions(false, false, false);
 	}
 
 	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
@@ -243,17 +244,19 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			return;
 		}
 
-		WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
-		for (WasmDataSegment segment : dataSection.getDataSegments()) {
-			long dataEnd = segment.getOffset() + segment.getData().length;
-			if (memSize < dataEnd) {
-				long increment = dataEnd - memSize;
-				long added = (increment / WasmConstants.WASM_MEM_BLOCK_SIZE) * WasmConstants.WASM_MEM_BLOCK_SIZE;
-				if (increment % WasmConstants.WASM_MEM_BLOCK_SIZE != 0) {
-					added += WasmConstants.WASM_MEM_BLOCK_SIZE;
+		if (dataWrapper != null) {
+			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
+			for (WasmDataSegment segment : dataSection.getDataSegments()) {
+				long dataEnd = segment.getOffset() + segment.getData().length;
+				if (memSize < dataEnd) {
+					long increment = dataEnd - memSize;
+					long added = (increment / WasmConstants.WASM_MEM_BLOCK_SIZE) * WasmConstants.WASM_MEM_BLOCK_SIZE;
+					if (increment % WasmConstants.WASM_MEM_BLOCK_SIZE != 0) {
+						added += WasmConstants.WASM_MEM_BLOCK_SIZE;
+					}
+					memSize += added;
+					log.appendMsg("Increased memory size to match data definition => " + Long.toHexString(memSize));
 				}
-				memSize += added;
-				log.appendMsg("Increased memory size to match data definition => " + Long.toHexString(memSize));
 			}
 		}
 
@@ -266,11 +269,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		block.setExecute(false);
 
 		// fill memory with data segments
-		for (WasmDataSegment segment : dataSection.getDataSegments()) {
-			Address where = memBase.add(segment.getOffset());
-			block.putBytes(where, segment.getData());
+		if (dataWrapper != null) {
+			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
+			for (WasmDataSegment segment : dataSection.getDataSegments()) {
+				Address where = memBase.add(segment.getOffset());
+				block.putBytes(where, segment.getData());
+			}
 		}
-
 	}
 
 	protected boolean isValidFunctionName(String functionName) {
@@ -348,8 +353,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 							program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
 						} else {
 							String validFuncName = extractValidFunctionName(methodName);
-							Function function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
-									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
+							Function function = program.getFunctionManager().createFunction(validFuncName,
+									methodAddress, new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
 							program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
 							// add the original name as a comment
 							function.setComment(methodName);
