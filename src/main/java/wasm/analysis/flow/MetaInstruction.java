@@ -1,4 +1,4 @@
-package wasm.analysis;
+package wasm.analysis.flow;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,14 +40,14 @@ public abstract class MetaInstruction {
 		}
 	}
 
-	public static MetaInstruction create(Type ty, InjectContext con, Program p) {
+	public static MetaInstruction create(Type ty, Address address, Program p) {
 		try {
-			ArrayList<Varnode> inputs = con.inputlist;
+//			ArrayList<Varnode> inputs = con.inputlist;
 			int param = 0;
-			if (inputs != null && inputs.size() > 0) {
-				Varnode input = inputs.get(0);
-				param = (int) PcodeHelper.resolveConstant(input);
-			}
+//			if (inputs != null && inputs.size() > 0) {
+//				Varnode input = inputs.get(0);
+//				param = (int) PcodeHelper.resolveConstant(input);
+//			}
 
 			MetaInstruction res = null;
 
@@ -59,7 +59,7 @@ public abstract class MetaInstruction {
 				res = new PopMetaInstruction(param);
 				break;
 			case BR:
-				long lvl = getLeb128Operand(p, con.baseAddr);
+				long lvl = getLeb128Operand(p, address);
 				res = new BrMetaInstruction((int) lvl);
 				break;
 			case BEGIN_LOOP:
@@ -81,21 +81,21 @@ public abstract class MetaInstruction {
 				res = new ReturnMetaInstruction();
 				break;
 			case CALL:
-				long idx = getLeb128Operand(p, con.baseAddr);
+				long idx = getLeb128Operand(p, address);
 				res = new CallMetaInstruction((int) idx);
 				break;
 			case CALL_INDIRECT:
-				long typeIdx = getLeb128Operand(p, con.baseAddr);
+				long typeIdx = getLeb128Operand(p, address);
 				res = new CallIndirectMetaInstruction((int) typeIdx);
 				break;
 			case BR_TABLE:
-				int[] rawCases = readRawBrTable(p, con.baseAddr);
+				int[] rawCases = readRawBrTable(p, address);
 				res = new BrTableMetaInstruction(rawCases);
 				break;
 			}
 
 			if (res != null) {
-				res.location = con.baseAddr;
+				res.location = address;
 				return res;
 			}
 

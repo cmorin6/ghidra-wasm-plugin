@@ -1,0 +1,60 @@
+package wasm.analysis.flow;
+
+import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Program;
+import wasm.util.ConcurrentInitStore;
+import wasm.util.Initializable;
+
+public class WasmFlowAnalysis implements Initializable<Program> {
+	private static final ConcurrentInitStore<Program, WasmFlowAnalysis> SINGLETON = new ConcurrentInitStore<Program, WasmFlowAnalysis>() {
+
+		@Override
+		protected WasmFlowAnalysis create() {
+			return new WasmFlowAnalysis();
+		}
+	};
+
+	public static WasmFlowAnalysis get(Program program) {
+		return SINGLETON.get(program);
+	}
+
+	protected ConcurrentInitStore<Function, WasmFunctionFlowAnalysis> functionFlowStorage = new ConcurrentInitStore<Function, WasmFunctionFlowAnalysis>() {
+
+		@Override
+		protected WasmFunctionFlowAnalysis create() {
+			return new WasmFunctionFlowAnalysis();
+		}
+
+		// use entry point address as key for storage
+		protected Object toStorageKey(Function param) {
+			if (param == null) {
+				return null;
+			}
+			return param.getEntryPoint();
+		}
+
+	};
+
+	@Override
+	public void init(Program param) {
+		// nothing to do here
+	}
+
+	public static MetaInstruction getMetaInstruction(Program program, Address address, MetaInstruction.Type type) {
+		WasmFlowAnalysis flowAnalysis = SINGLETON.get(program);
+		if (flowAnalysis == null) {
+			return null;
+		}
+		Function function = program.getFunctionManager().getFunctionContaining(address);
+		if (function == null) {
+			return null;
+		}
+		WasmFunctionFlowAnalysis functionAnalysis = flowAnalysis.functionFlowStorage.get(function);
+		if(functionAnalysis==null) {
+			return null;
+		}
+		return functionAnalysis.getMetaInstruction(address, type);
+	}
+
+}

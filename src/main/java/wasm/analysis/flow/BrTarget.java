@@ -1,4 +1,4 @@
-package wasm.analysis;
+package wasm.analysis.flow;
 
 import ghidra.program.model.address.Address;
 

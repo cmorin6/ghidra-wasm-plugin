@@ -6,7 +6,7 @@ import java.util.Map;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
 import ghidra.program.model.lang.InjectPayload;
 import ghidra.program.model.lang.PcodeInjectLibrary;
-import wasm.analysis.MetaInstruction;
+import wasm.analysis.flow.MetaInstruction;
 
 public class PcodeInjectLibraryWasm extends PcodeInjectLibrary{
 	

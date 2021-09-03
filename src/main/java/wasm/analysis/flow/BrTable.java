@@ -1,4 +1,4 @@
-package wasm.analysis;
+package wasm.analysis.flow;
 
 public class BrTable {
 	private BrTarget[] cases;

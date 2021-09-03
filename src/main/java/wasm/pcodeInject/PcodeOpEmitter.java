@@ -28,8 +28,8 @@ import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
-import wasm.analysis.BrTable;
-import wasm.analysis.BrTarget;
+import wasm.analysis.flow.BrTable;
+import wasm.analysis.flow.BrTarget;
 import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 
