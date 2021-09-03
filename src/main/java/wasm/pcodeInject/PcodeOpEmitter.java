@@ -385,6 +385,8 @@ public class PcodeOpEmitter {
 		
 		emitPopParams(numParams);
 		
+		emitMov32("SP", "tmpSP");
+		
 		emitCallInd(funcAddr);
 		
 		emitRestoreLocals(numParams);
