@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import ghidra.app.cmd.function.ApplyFunctionSignatureCmd;
 import ghidra.app.util.MemoryBlockUtils;
 import ghidra.app.util.Option;
 import ghidra.app.util.bin.BinaryReader;
@@ -61,13 +62,16 @@ import wasm.format.WasmHeader;
 import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmExportSection;
+import wasm.format.sections.WasmFunctionSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
+import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmExportEntry;
+import wasm.format.sections.structures.WasmFuncType;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
@@ -347,18 +351,31 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						String methodName = getMethodName(module.getNameSection(),
 								exports == null ? null : (WasmExportSection) exports.getPayload(), i + imports_offset);
 
+						Function function;
 						if (isValidFunctionName(methodName)) {
-							program.getFunctionManager().createFunction(methodName, methodAddress,
+							function = program.getFunctionManager().createFunction(methodName, methodAddress,
 									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
 							program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
 						} else {
 							String validFuncName = extractValidFunctionName(methodName);
-							Function function = program.getFunctionManager().createFunction(validFuncName,
-									methodAddress, new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
+							function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
+									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
 							program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
 							// add the original name as a comment
 							function.setComment(methodName);
+
 						}
+						function.setCallingConvention("__asmA");
+						WasmFunctionSection funcSec = (WasmFunctionSection) module
+								.getSection(WasmSectionId.SEC_FUNCTION).getPayload();
+						WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE)
+								.getPayload();
+						int typeidx = funcSec.getTypeIdx(i);
+						WasmFuncType funcType = typeSec.getType(typeidx);
+						FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), funcType);
+						ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
+								SourceType.ANALYSIS, false, false);
+						cmd.applyTo(program);
 					}
 					break;
 				}
@@ -377,9 +394,21 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						Address methodEnd = Utils.toAddr(program,
 								Utils.IMPORTS_BASE + (nextFuncIdx + 1) * Utils.IMPORT_STUB_LEN - 1);
 
-						program.getFunctionManager().createFunction(methodName, methodAddress,
+						Function function = program.getFunctionManager().createFunction(methodName, methodAddress,
 								new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
 
+						function.setCallingConvention("__asmA");
+						
+						int typeIdx = entry.getFunctionType();
+						WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE)
+								.getPayload();
+						WasmFuncType funcType = typeSec.getType(typeIdx);
+						FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), funcType);
+						ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
+								SourceType.ANALYSIS, false, false);
+						cmd.applyTo(program);
+						
+						
 						program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
 
 						nextFuncIdx++;
