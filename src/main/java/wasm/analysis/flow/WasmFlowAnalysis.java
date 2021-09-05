@@ -3,6 +3,7 @@ package wasm.analysis.flow;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
+import wasm.analysis.flow.WasmFunctionFlowAnalysis.GlobalStack;
 import wasm.util.ConcurrentInitStore;
 import wasm.util.Initializable;
 
@@ -51,10 +52,26 @@ public class WasmFlowAnalysis implements Initializable<Program> {
 			return null;
 		}
 		WasmFunctionFlowAnalysis functionAnalysis = flowAnalysis.functionFlowStorage.get(function);
-		if(functionAnalysis==null) {
+		if (functionAnalysis == null) {
 			return null;
 		}
 		return functionAnalysis.getMetaInstruction(address, type);
+	}
+
+	public static GlobalStack getGlobalStack(Program program, Address address) {
+		WasmFlowAnalysis flowAnalysis = SINGLETON.get(program);
+		if (flowAnalysis == null) {
+			return null;
+		}
+		Function function = program.getFunctionManager().getFunctionContaining(address);
+		if (function == null) {
+			return null;
+		}
+		WasmFunctionFlowAnalysis functionAnalysis = flowAnalysis.functionFlowStorage.get(function);
+		if (functionAnalysis == null) {
+			return null;
+		}
+		return functionAnalysis.getGlobalStack();
 	}
 
 }

@@ -8,10 +8,10 @@ import ghidra.program.model.lang.InjectPayload;
 import ghidra.program.model.lang.PcodeInjectLibrary;
 import wasm.analysis.flow.MetaInstruction;
 
-public class PcodeInjectLibraryWasm extends PcodeInjectLibrary{
-	
+public class PcodeInjectLibraryWasm extends PcodeInjectLibrary {
+
 	private Map<String, InjectPayloadWasm> implementedOps;
-	
+
 	public static final String POP = "popCallOther";
 	public static final String PUSH = "pushCallOther";
 	public static final String BR = "brCallOther";
@@ -24,12 +24,13 @@ public class PcodeInjectLibraryWasm extends PcodeInjectLibrary{
 	public static final String CALL = "callCallOther";
 	public static final String CALL_INDIRECT = "callIndirectCallOther";
 	public static final String BR_TABLE = "brTableCallOther";
-	
+
 	public static final String SOURCENAME = "wasmsource";
-	
-	private long nextUniqueBase;
+
 	public static final long BASE_CHUNK_SIZE = 0x200;
-	
+	private long nextUniqueBase;
+	long funcInitUniqueBase;
+
 	public long getNextUniqueBase() {
 		long res = nextUniqueBase;
 		nextUniqueBase += BASE_CHUNK_SIZE;
@@ -39,22 +40,26 @@ public class PcodeInjectLibraryWasm extends PcodeInjectLibrary{
 	public PcodeInjectLibraryWasm(SleighLanguage l) {
 		super(l);
 		nextUniqueBase = this.uniqueBase;
-		
+
 		implementedOps = new HashMap<>();
 		implementedOps.put(POP, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.POP));
 		implementedOps.put(PUSH, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.PUSH));
 		implementedOps.put(BR, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BR));
-		implementedOps.put(BEGIN_LOOP, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BEGIN_LOOP));
-		implementedOps.put(BEGIN_BLOCK, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BEGIN_BLOCK));
+		implementedOps.put(BEGIN_LOOP,
+				new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BEGIN_LOOP));
+		implementedOps.put(BEGIN_BLOCK,
+				new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BEGIN_BLOCK));
 		implementedOps.put(END, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.END));
 		implementedOps.put(IF, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.IF));
 		implementedOps.put(ELSE, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.ELSE));
 		implementedOps.put(RETURN, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.RETURN));
 		implementedOps.put(CALL, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.CALL));
-		implementedOps.put(CALL_INDIRECT, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.CALL_INDIRECT));
+		implementedOps.put(CALL_INDIRECT,
+				new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.CALL_INDIRECT));
 		implementedOps.put(BR_TABLE, new InjectMeta(SOURCENAME, l, getNextUniqueBase(), MetaInstruction.Type.BR_TABLE));
+		funcInitUniqueBase = getUniqueBase();
 	}
-	
+
 	@Override
 	public InjectPayload allocateInject(String sourceName, String name, int tp) {
 		if (tp == InjectPayload.CALLOTHERFIXUP_TYPE) {
@@ -62,6 +67,8 @@ public class PcodeInjectLibraryWasm extends PcodeInjectLibrary{
 			if (payload != null) {
 				return payload;
 			}
+		} else if (tp == InjectPayload.CALLMECHANISM_TYPE) {
+			return new InjectFuncInitWasm(name, SOURCENAME, language, funcInitUniqueBase);
 		}
 		return super.allocateInject(sourceName, name, tp);
 	}

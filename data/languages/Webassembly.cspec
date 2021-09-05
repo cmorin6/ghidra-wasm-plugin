@@ -219,6 +219,7 @@
           <register name="ret0"/>
         </pentry>
       </output>
+      <pcode inject="uponentry" dynamic="true"/>
     </prototype>
   </default_proto>
   <callotherfixup targetop="popCallOther">

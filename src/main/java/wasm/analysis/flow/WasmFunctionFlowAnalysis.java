@@ -1,5 +1,6 @@
 package wasm.analysis.flow;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.PcodeOp;
 import wasm.analysis.WasmModuleData;
 import wasm.analysis.flow.MetaInstruction.Type;
@@ -17,6 +19,8 @@ import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 import wasm.pcodeInject.PcodeInjectLibraryWasm;
 import wasm.util.Initializable;
+import wasm.util.WasmInstructionUtil;
+import wasm.util.WasmInstructionUtil.OPCODES;
 
 public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 
@@ -80,9 +84,14 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 	private Program program;
 	private Function function;
 	private Map<MetaKey, MetaInstruction> metaInstrsMap = new HashMap<>();
+	private GlobalStack globalStack;
 
 	public MetaInstruction getMetaInstruction(Address address, Type kind) {
 		return metaInstrsMap.get(new MetaKey(address, kind));
+	}
+
+	public GlobalStack getGlobalStack() {
+		return globalStack;
 	}
 
 	@Override
@@ -97,8 +106,11 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 	public void init(Function function) {
 		program = function.getProgram();
 		this.function = function;
+
+		detectGlobalStack();
+
 		// -- recover instruction and flow here
-		
+
 		// recover MetaInstructions using the listing
 		List<MetaInstruction> metaInstrs = collectMetaInstructions();
 		// compute flow
@@ -120,12 +132,161 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 					String name = program.getLanguage().getUserDefinedOpName((int) op.getInput(0).getOffset());
 					Type opKind = callOtherMapping.get(name);
 					if (opKind != null) {
-						res.add(MetaInstruction.create(opKind, instr.getAddress(), program));
+						res.add(MetaInstruction.create(opKind, instr, program));
 					}
 				}
 			}
 		}
 		return res;
+	}
+
+	public static class GlobalStack {
+		/**
+		 * Size of the stack in memory
+		 */
+		private int stackSize;
+		/**
+		 * Index in globals used to retrieve the stack index
+		 */
+		private int globalIndex;
+
+		/**
+		 * Index of the local used to store the top of the stack
+		 */
+		private int localIndex;
+
+		public GlobalStack(int stackSize, int globalIndex, int localIndex) {
+			this.stackSize = stackSize;
+			this.globalIndex = globalIndex;
+			this.localIndex = localIndex;
+		}
+
+		public int getStackSize() {
+			return stackSize;
+		}
+
+		public void setStackSize(int stackSize) {
+			this.stackSize = stackSize;
+		}
+
+		public int getGlobalIndex() {
+			return globalIndex;
+		}
+
+		public void setGlobalIndex(int globalIndex) {
+			this.globalIndex = globalIndex;
+		}
+
+		public int getLocalIndex() {
+			return localIndex;
+		}
+
+		public void setLocalIndex(int localIndex) {
+			this.localIndex = localIndex;
+		}
+
+	}
+
+	/**
+	 * Detect cases where the function use an external stack variable passed using a
+	 * global variable.
+	 * 
+	 * @param instrs
+	 * @return
+	 */
+	protected GlobalStack getGlobalStack(List<Instruction> instrs) {
+		// supported global stack setups :
+		// 1)
+		// global.get {globalIndex}
+		// i32.const {stackSize}
+		// i32.sub
+		// local.set {localIndex}
+		// 2)
+		// global.get {globalIndex}
+		// i32.const {stackSize}
+		// i32.sub
+		// local.tee {localIndex}
+		// 3)
+		// global.get {globalIndex}
+		// local.set {tmp1}
+		// i32.const {stackSize}
+		// local.set {tmp2}
+		// local.get {tmp1}
+		// local.get {tmp2}
+		// i32.sub
+		// local.set {localIndex}
+
+		int globalIndex;
+		int stackSize = -1;
+		int localIndex;
+
+		try {
+			if (instrs.size() < 7) {
+				return null;
+			}
+
+			int instrIndex = 0;
+
+			// check that first instruction is a global.get
+			Instruction instr = instrs.get(instrIndex);
+			if (instr.getByte(0) != OPCODES.GLOBAL_GET) {
+				return null;
+			}
+			globalIndex = (int) WasmInstructionUtil.getFirstInstrOperand(instr);
+
+			// search for first i32.const instruction
+			while (instrIndex < instrs.size() - 2) {
+				instr = instrs.get(instrIndex);
+				if (instr.getByte(0) == OPCODES.I32_CONST) {
+					stackSize = (int) WasmInstructionUtil.getFirstInstrOperand(instr);
+					instrIndex += 1;
+					break;
+				}
+				instrIndex += 1;
+			}
+			if (stackSize == -1) {
+				return null;
+			}
+
+			// search for first i32.sub instruction
+			boolean found = false;
+			while (instrIndex < instrs.size() - 1) {
+				instr = instrs.get(instrIndex);
+				if (instr.getByte(0) == OPCODES.I32_SUB) {
+					instrIndex += 1;
+					found = true;
+					break;
+				}
+				instrIndex += 1;
+			}
+
+			if (!found) {
+				return null;
+			}
+
+			// check that next instruction is either local.set or local.tee
+			instr = instrs.get(instrIndex);
+			if (instr.getByte(0) != OPCODES.LOCAL_SET && instr.getByte(0) != OPCODES.LOCAL_TEE) {
+				return null;
+			}
+			localIndex = (int) WasmInstructionUtil.getFirstInstrOperand(instr);
+
+			return new GlobalStack(stackSize, globalIndex, localIndex);
+		} catch (MemoryAccessException | IOException e) {
+			return null;
+		}
+	}
+
+	private void detectGlobalStack() {
+		InstructionIterator iter = program.getListing().getInstructions(function.getBody(), true);
+		List<Instruction> instrs = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			if (!iter.hasNext()) {
+				break;
+			}
+			instrs.add(iter.next());
+		}
+		globalStack = getGlobalStack(instrs);
 	}
 
 	public void performResolution(List<MetaInstruction> metaInstrs) {
@@ -195,6 +356,8 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 				int funcidx = callInstr.funcIdx;
 				WasmFuncSignature func = WasmModuleData.get(program).getFunctionSignature(funcidx);
 				callInstr.signature = func;
+				// if we have a global stack make sure to back/restore the corresponding local
+				callInstr.extraLocalSaveIndex= globalStack==null ? -1:globalStack.getLocalIndex();
 				valueStackDepth -= func.getParams().length;
 				valueStackDepth += func.getReturns().length;
 				break;
@@ -203,6 +366,8 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 				int typeIdx = callIndirect.typeIdx;
 				WasmFuncType type = WasmModuleData.get(program).getTypeSection().getType(typeIdx);
 				callIndirect.signature = type;
+				// if we have a global stack make sure to back/restore the corresponding local
+				callIndirect.extraLocalSaveIndex= globalStack==null ? -1:globalStack.getLocalIndex();
 				valueStackDepth--;
 				valueStackDepth -= type.getParamTypes().length;
 				valueStackDepth += type.getReturnTypes().length;
@@ -242,10 +407,10 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 		return new BrTarget(target, implicitPops);
 	}
 
-	private static BrTable getBrTable(int[] rawCases, ArrayList<MetaInstruction> controlStack, int valueStackDepth) {
+	private static BrTable getBrTable(long[] rawCases, ArrayList<MetaInstruction> controlStack, int valueStackDepth) {
 		BrTarget[] cases = new BrTarget[rawCases.length];
 		for (int i = 0; i < rawCases.length; i++) {
-			cases[i] = getTarget(rawCases[i], controlStack, valueStackDepth);
+			cases[i] = getTarget((int) rawCases[i], controlStack, valueStackDepth);
 		}
 		return new BrTable(cases);
 	}
