@@ -265,7 +265,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 
 		// create memory block
-		Address memBase = program.getAddressFactory().getAddressSpace("mem0").getAddress(0);
+		Address memBase = program.getAddressFactory().getAddressSpace("ram").getAddress(0);
 		MemoryBlock block = program.getMemory().createInitializedBlock("memory", memBase, memSize, (byte) 0x00, monitor,
 				false);
 		block.setRead(true);

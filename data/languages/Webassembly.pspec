@@ -8,7 +8,7 @@
     <property key="pcodeInjectLibraryClass" value="wasm.pcodeInject.PcodeInjectLibraryWasm"/>
   </properties>
   <inferptrbounds>
-    <range space="ram" first="0" last="0"/>   <!-- Don't try to infer pointers from constants in the body of a function -->
+    <range space="ram" first="0" last="0x10000000"/>   <!-- Don't try to infer pointers from constants in the body of a function -->
   </inferptrbounds>
   <programcounter register="PC"/>
   <register_data>

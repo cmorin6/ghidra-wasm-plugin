@@ -57,56 +57,56 @@ macro load8(memoffset, dest) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:1 addr;
+	dest = *[ram]:1 addr;
 }
 
 macro load16(memoffset, dest) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:2 addr;
+	dest = *[ram]:2 addr;
 }
 
 macro load32(memoffset, dest) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,32] + x0;
-	dest = *[mem0]:4 addr;
+	dest = *[ram]:4 addr;
 }
 
 macro load64(memoffset, dest) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:8 addr;
+	dest = *[ram]:8 addr;
 }
 
 macro store8(memoffset, val) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:1 addr = val;
+	*[ram]:1 addr = val;
 }
 
 macro store16(memoffset, val) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:2 addr = val;
+	*[ram]:2 addr = val;
 }
 
 macro store32(memoffset, val) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:4 addr = val;
+	*[ram]:4 addr = val;
 }
 
 macro store64(memoffset, val) {
 	x0:4 = 0;
 	pop32(x0);
 	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:8 addr = val;
+	*[ram]:8 addr = val;
 }
 
 
