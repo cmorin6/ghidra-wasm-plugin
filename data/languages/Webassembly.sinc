@@ -8,6 +8,16 @@ define token byteval (8)
 	bytev = (0,7)
 ;
 
+
+define token f64val (64)
+	f64v = (0,63)
+;
+
+
+define token f32val (32)
+	f32v = (0,31)
+;
+
 ################################################################
 # Macros
 ################################################################
@@ -341,6 +351,16 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 
 :""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; indent {
 	val:8 = SLeb128:8;
+	push64(val);
+}
+
+:""^indent^"f32.const" f32v is opc=0x43; f32v; indent {
+	val:4 = f32v:4;
+	push32(val);
+}
+
+:""^indent^"f64.const" f64v is opc=0x44; f64v; indent {
+	val:8 = f64v:8;
 	push64(val);
 }
 
