@@ -10,6 +10,8 @@ define token opbyte (8)
 	v7 = (0, 6)
 	v8 = (0, 6)
 	v9 = (0, 6)
+	use_locr = (6,7)
+	locr = (0,5)
 ;
 
 ULeb128: val is topbit = 0 & v0 
