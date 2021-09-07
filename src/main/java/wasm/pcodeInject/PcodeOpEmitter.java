@@ -393,12 +393,16 @@ public class PcodeOpEmitter {
 			throw new RuntimeException("Multiple returns not supported (yet)");
 		}
 
-		// make sure that we backup/restore the local holding the global stack pointer
-		if (extraLocalSaveIndex != -1) {
-			numParams = Math.max(numParams, extraLocalSaveIndex + 1);
-		}
+		boolean restoreExtra = extraLocalSaveIndex != -1 && extraLocalSaveIndex >= numParams;
+
 
 		emitBackupLocals(numParams);
+		
+		// backup local pointing to global stack
+		if (restoreExtra) {
+			emitMov64("l" + extraLocalSaveIndex, "tmp" + extraLocalSaveIndex);
+		}
+		
 		Varnode funcAddr = emitGetIndirectFuncAddr();
 
 		emitPopParams(numParams);
@@ -407,6 +411,11 @@ public class PcodeOpEmitter {
 
 		emitCallInd(funcAddr);
 
+		// restore local pointing to global stack
+		if (restoreExtra) {
+			emitMov64("tmp" + extraLocalSaveIndex, "l" + extraLocalSaveIndex);
+		}
+		
 		emitRestoreLocals(numParams);
 
 		if (numReturns == 1) {
