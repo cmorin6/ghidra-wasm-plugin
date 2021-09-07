@@ -150,57 +150,57 @@
 :""^indent^"i32.lt_s"  is opc=0x48; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 s< x1);
 }
 :""^indent^"i32.lt_u"  is opc=0x49; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 < x1);
 }
 :""^indent^"i32.gt_s"  is opc=0x4A; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 s> x1);
 }
 :""^indent^"i32.gt_u"  is opc=0x4B; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 > x1);
 }
 :""^indent^"i32.le_s"  is opc=0x4C; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 s<= x1);
 }
 :""^indent^"i32.le_u"  is opc=0x4D; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 <= x1);
 }
 :""^indent^"i32.ge_s"  is opc=0x4E; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 s>= x1);
 }
 :""^indent^"i32.ge_u"  is opc=0x4F; indent {
 	x0:4 = 0;
 	x1:4 = 0;
-	pop32(x0);
 	pop32(x1);
+	pop32(x0);
 	push32(x0 >= x1);
 }
 :""^indent^"i64.eqz"  is opc=0x50; indent {
