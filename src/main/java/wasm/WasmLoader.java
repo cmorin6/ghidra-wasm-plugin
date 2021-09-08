@@ -346,7 +346,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						// followed by an index for each function in the Function Section,
 						WasmSection imports = module.getSection(WasmSectionId.SEC_IMPORT);
 						int imports_offset = imports == null ? 0
-								: ((WasmImportSection) imports.getPayload()).getCount();
+								: ((WasmImportSection) imports.getPayload()).getImportedFunctionCount();
 						WasmSection exports = module.getSection(WasmSectionId.SEC_EXPORT);
 						String methodName = getMethodName(module.getNameSection(),
 								exports == null ? null : (WasmExportSection) exports.getPayload(), i + imports_offset);
@@ -398,7 +398,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 								new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
 
 						function.setCallingConvention("__asmA");
-						
+
 						int typeIdx = entry.getFunctionType();
 						WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE)
 								.getPayload();
@@ -407,8 +407,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
 								SourceType.ANALYSIS, false, false);
 						cmd.applyTo(program);
-						
-						
+
 						program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
 
 						nextFuncIdx++;
