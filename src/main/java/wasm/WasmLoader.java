@@ -54,25 +54,19 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
+import wasm.analysis.WasmFunctionData;
+import wasm.analysis.WasmModuleData;
 import wasm.file.WasmModule;
 import wasm.format.Utils;
 import wasm.format.WasmConstants;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
-import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
-import wasm.format.sections.WasmExportSection;
-import wasm.format.sections.WasmFunctionSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
-import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
-import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
-import wasm.format.sections.structures.WasmExportEntry;
-import wasm.format.sections.structures.WasmFuncType;
-import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
 
@@ -182,21 +176,18 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		moduleBlock.setPermissions(false, false, false);
 	}
 
-	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
-		if (names != null) {
-			String name = names.getFunctionName(id);
-			if (name != null) {
-				return "wasm_" + name;
-			}
+	private String getMethodName(WasmFunctionData function) {
+		String res = function.getName();
+		if (res == null) {
+			res = function.getExportName();
 		}
-
-		if (exports != null) {
-			WasmExportEntry entry = exports.findMethod(id);
-			if (entry != null) {
-				return "export_" + entry.getName();
-			}
+		if (res == null) {
+			res = function.getImportName();
 		}
-		return "unnamed_function_" + id;
+		if (res == null) {
+			res = "unnamed_function_" + function.getIndex();
+		}
+		return res;
 	}
 
 	public long getWasmMemorySize(Program program, WasmModule module, MessageLog log) {
@@ -327,95 +318,65 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			initMemory(program, module, monitor, log);
 
-			for (WasmSection section : module.getSections()) {
-				monitor.setMessage("Loaded " + section.getId().toString());
-				switch (section.getId()) {
-				case SEC_CODE: {
-					WasmCodeSection codeSection = (WasmCodeSection) section.getPayload();
-					long code_offset = section.getPayloadOffset();
-					for (int i = 0; i < codeSection.getFunctions().size(); ++i) {
-						WasmFunctionBody method = codeSection.getFunctions().get(i);
-						long method_offset = code_offset + method.getOffset();
-						Address methodAddress = Utils.toAddr(program, Utils.METHOD_ADDRESS + method_offset);
-						Address methodend = Utils.toAddr(program,
-								Utils.METHOD_ADDRESS + method_offset + method.getInstructions().length);
-						byte[] instructionBytes = method.getInstructions();
-						program.getMemory().setBytes(methodAddress, instructionBytes);
-						// The function index space begins with an index for each imported function,
-						// in the order the imports appear in the Import Section, if present,
-						// followed by an index for each function in the Function Section,
-						WasmSection imports = module.getSection(WasmSectionId.SEC_IMPORT);
-						int imports_offset = imports == null ? 0
-								: ((WasmImportSection) imports.getPayload()).getImportedFunctionCount();
-						WasmSection exports = module.getSection(WasmSectionId.SEC_EXPORT);
-						String methodName = getMethodName(module.getNameSection(),
-								exports == null ? null : (WasmExportSection) exports.getPayload(), i + imports_offset);
+			WasmModuleData moduleData = new WasmModuleData(program, module);
 
-						Function function;
-						if (isValidFunctionName(methodName)) {
-							function = program.getFunctionManager().createFunction(methodName, methodAddress,
-									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
-							program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
-						} else {
-							String validFuncName = extractValidFunctionName(methodName);
-							function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
-									new AddressSet(methodAddress, methodend), SourceType.ANALYSIS);
-							program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
-							// add the original name as a comment
-							function.setComment(methodName);
+			// create functions
+			for (WasmFunctionData functionData : moduleData.getRealFunctions()) {
+				Address methodAddress = functionData.getEntryPoint();
+				byte[] instructionBytes = functionData.getBody().getInstructions();
 
-						}
-						function.setCallingConvention("__asmA");
-						WasmFunctionSection funcSec = (WasmFunctionSection) module
-								.getSection(WasmSectionId.SEC_FUNCTION).getPayload();
-						WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE)
-								.getPayload();
-						int typeidx = funcSec.getTypeIdx(i);
-						WasmFuncType funcType = typeSec.getType(typeidx);
-						FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), funcType);
-						ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
-								SourceType.ANALYSIS, false, false);
-						cmd.applyTo(program);
-					}
-					break;
+				// write actual function bytes
+				program.getMemory().setBytes(methodAddress, instructionBytes);
+
+				// create Function and symbols
+				Address methodEnd = methodAddress.add(instructionBytes.length);
+				String methodName = getMethodName(functionData);
+				Function function;
+				if (isValidFunctionName(methodName)) {
+					function = program.getFunctionManager().createFunction(methodName, methodAddress,
+							new AddressSet(methodAddress, methodEnd), SourceType.ANALYSIS);
+					program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
+				} else {
+					String validFuncName = extractValidFunctionName(methodName);
+					function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
+							new AddressSet(methodAddress, methodEnd), SourceType.ANALYSIS);
+					program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
+					// add the original name as a comment
+					function.setComment(methodName);
 				}
-				case SEC_IMPORT: {
-					WasmImportSection importSection = (WasmImportSection) section.getPayload();
-					createImportStubBlock(program, importSection.getCount() * Utils.IMPORT_STUB_LEN, monitor);
-					int nextFuncIdx = 0;
-					for (WasmImportEntry entry : importSection.getEntries()) {
-						if (entry.getKind() != WasmExternalKind.EXT_FUNCTION) {
-							continue;
-						}
 
-						String methodName = "import__" + entry.getName();
-						Address methodAddress = Utils.toAddr(program,
-								Utils.IMPORTS_BASE + nextFuncIdx * Utils.IMPORT_STUB_LEN);
-						Address methodEnd = Utils.toAddr(program,
-								Utils.IMPORTS_BASE + (nextFuncIdx + 1) * Utils.IMPORT_STUB_LEN - 1);
+				// apply default function signature
+				function.setCallingConvention("__asmA");
+				FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), functionData.getFuncType());
+				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig, SourceType.ANALYSIS,
+						false, false);
+				cmd.applyTo(program);
+			}
 
-						Function function = program.getFunctionManager().createFunction(methodName, methodAddress,
-								new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
+			// create imported functions
+			List<WasmFunctionData> importedFuncs = moduleData.getImportedFunctions();
+			if (!importedFuncs.isEmpty()) {
+				createImportStubBlock(program, importedFuncs.size() * Utils.IMPORT_STUB_LEN, monitor);
+				for (WasmFunctionData functionData : importedFuncs) {
+					String methodName = "import__" + functionData.getImportName();
+					Address methodAddress = functionData.getEntryPoint();
+					Address methodEnd = methodAddress.add(Utils.IMPORT_STUB_LEN - 1);
+					Function function = program.getFunctionManager().createFunction(methodName, methodAddress,
+							new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
 
-						function.setCallingConvention("__asmA");
+					program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
 
-						int typeIdx = entry.getFunctionType();
-						WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE)
-								.getPayload();
-						WasmFuncType funcType = typeSec.getType(typeIdx);
-						FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), funcType);
-						ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
-								SourceType.ANALYSIS, false, false);
-						cmd.applyTo(program);
+					function.setCallingConvention("__asmA");
 
-						program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
+					FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(),
+							functionData.getFuncType());
+					ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
+							SourceType.ANALYSIS, false, false);
+					cmd.applyTo(program);
 
-						nextFuncIdx++;
-					}
-					break;
-				}
 				}
 			}
+
 		} catch (Exception e) {
 			log.appendException(e);
 		}
