@@ -24,7 +24,7 @@ define register offset=0xfff0 size=4   contextreg;
 
 define context contextreg
 	indent_lvl = (0, 7)
-	br_table_count = (8, 15)
+	br_table_count = (8, 31)
 ;
 
 # Include contents of Webassembly.sinc file

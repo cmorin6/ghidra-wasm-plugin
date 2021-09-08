@@ -1,0 +1,58 @@
+# note:
+# The hack bellow allows to consume up to 20 indent/inc_indent at a time.
+# This is done to prevent "Exceeded maximum parse depth" error from occurring when indent grows.
+
+# terminator constructors
+indent: "" is indent_lvl=0 {}
+indent: " . " is indent_lvl=1 [ indent_lvl=0; ]{}
+indent: " .  . " is indent_lvl=2 [ indent_lvl=0; ]{}
+indent: " .  .  . " is indent_lvl=3 [ indent_lvl=0; ]{}
+indent: " .  .  .  . " is indent_lvl=4 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  . " is indent_lvl=5 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  . " is indent_lvl=6 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  . " is indent_lvl=7 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  . " is indent_lvl=8 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  . " is indent_lvl=9 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  . " is indent_lvl=10 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=11 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=12 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=13 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=14 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=15 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=16 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=17 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=18 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=19 [ indent_lvl=0; ]{}
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=20 [ indent_lvl=0; ]{}
+# consume constructors
+indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . "^indent is indent [ indent_lvl=indent_lvl-20; ]{}
+
+
+# This outputs one less indentation than indent, use this when the indent_lvl is increased by the current instruction
+
+# terminator constructors
+inc_indent: "" is indent_lvl=1 | indent_lvl=0 {}
+inc_indent: " . " is indent_lvl=2 [ indent_lvl=0; ]{}
+inc_indent: " .  . " is indent_lvl=3 [ indent_lvl=0; ]{}
+inc_indent: " .  .  . " is indent_lvl=4 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  . " is indent_lvl=5 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  . " is indent_lvl=6 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  . " is indent_lvl=7 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  . " is indent_lvl=8 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  . " is indent_lvl=9 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  . " is indent_lvl=10 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  . " is indent_lvl=11 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=12 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=13 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=14 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=15 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=16 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=17 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=18 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=19 [ indent_lvl=0; ]{}
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . " is indent_lvl=20 [ indent_lvl=0; ]{}
+# consume constructors
+inc_indent: " .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . "^inc_indent is inc_indent [ indent_lvl=indent_lvl-20; ]{}
+
+
+@define INC_INDENT "inc_indent [ indent_lvl = indent_lvl + 1; globalset(inst_next, indent_lvl); ]"

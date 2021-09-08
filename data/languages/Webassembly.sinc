@@ -172,14 +172,9 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 
 ################################################################
 
-indent: "" is indent_lvl=0 {}
-indent: " . "^indent is indent [ indent_lvl = indent_lvl - 1; ]{}
 
-# This outputs one less indentation than indent, use this when the indent_lvl is increased by the current instruction
-inc_indent: "" is indent_lvl=1 | indent_lvl=0 {}
-inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
+@include "Indent.sinc"
 
-@define INC_INDENT "inc_indent [ indent_lvl = indent_lvl + 1; globalset(inst_next, indent_lvl); ]"
 
 @include "br_table.sinc"
 

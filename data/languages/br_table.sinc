@@ -1,18 +1,63 @@
-br_table_items: "" is br_table_count=0 {}
-br_table_items: ULeb128^" "^br_table_items is ULeb128; br_table_items [ br_table_count = br_table_count - 1; ]{}
+# note:
+# The hack bellow allows to consume up to 20 br_table_items at a time.
+# This is done to prevent "Exceeded maximum parse depth" error from occurring on big tables.
 
-:""^indent^"br_table" br_table_items is opc=0x0e; topbit = 0 & v0 ; br_table_items; indent
+ULeb128_2: ULeb128 	is ULeb128 {}
+ULeb128_3: ULeb128 	is ULeb128 {}
+ULeb128_4: ULeb128 	is ULeb128 {}
+ULeb128_5: ULeb128 	is ULeb128 {}
+ULeb128_6: ULeb128 	is ULeb128 {}
+ULeb128_7: ULeb128 	is ULeb128 {}
+ULeb128_8: ULeb128 	is ULeb128 {}
+ULeb128_9: ULeb128 	is ULeb128 {}
+ULeb128_10: ULeb128 	is ULeb128 {}
+ULeb128_11: ULeb128 	is ULeb128 {}
+ULeb128_12: ULeb128 	is ULeb128 {}
+ULeb128_13: ULeb128 	is ULeb128 {}
+ULeb128_14: ULeb128 	is ULeb128 {}
+ULeb128_15: ULeb128 	is ULeb128 {}
+ULeb128_16: ULeb128 	is ULeb128 {}
+ULeb128_17: ULeb128 	is ULeb128 {}
+ULeb128_18: ULeb128 	is ULeb128 {}
+ULeb128_19: ULeb128 	is ULeb128 {}
+ULeb128_20: ULeb128 	is ULeb128 {}
+
+# terminator constructors
+br_table_items: ULeb128 is br_table_count=1 & ULeb128 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2 is br_table_count=2 & ULeb128 ; ULeb128_2 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3 is br_table_count=3 & ULeb128 ; ULeb128_2 ; ULeb128_3 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4 is br_table_count=4 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5 is br_table_count=5 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6 is br_table_count=6 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7 is br_table_count=7 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8 is br_table_count=8 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9 is br_table_count=9 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10 is br_table_count=10 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11 is br_table_count=11 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12 is br_table_count=12 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13 is br_table_count=13 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14 is br_table_count=14 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15 is br_table_count=15 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16 is br_table_count=16 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16^" "^ULeb128_17 is br_table_count=17 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 ; ULeb128_17 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16^" "^ULeb128_17^" "^ULeb128_18 is br_table_count=18 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 ; ULeb128_17 ; ULeb128_18 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16^" "^ULeb128_17^" "^ULeb128_18^" "^ULeb128_19 is br_table_count=19 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 ; ULeb128_17 ; ULeb128_18 ; ULeb128_19 [ br_table_count = 0; ]{}
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16^" "^ULeb128_17^" "^ULeb128_18^" "^ULeb128_19^" "^ULeb128_20 is br_table_count=20 & ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 ; ULeb128_17 ; ULeb128_18 ; ULeb128_19 ; ULeb128_20 [ br_table_count = 0; ]{}
+# consume constructors
+br_table_items: ULeb128^" "^ULeb128_2^" "^ULeb128_3^" "^ULeb128_4^" "^ULeb128_5^" "^ULeb128_6^" "^ULeb128_7^" "^ULeb128_8^" "^ULeb128_9^" "^ULeb128_10^" "^ULeb128_11^" "^ULeb128_12^" "^ULeb128_13^" "^ULeb128_14^" "^ULeb128_15^" "^ULeb128_16^" "^ULeb128_17^" "^ULeb128_18^" "^ULeb128_19^" "^ULeb128_20^" "^br_table_items is ULeb128 ; ULeb128_2 ; ULeb128_3 ; ULeb128_4 ; ULeb128_5 ; ULeb128_6 ; ULeb128_7 ; ULeb128_8 ; ULeb128_9 ; ULeb128_10 ; ULeb128_11 ; ULeb128_12 ; ULeb128_13 ; ULeb128_14 ; ULeb128_15 ; ULeb128_16 ; ULeb128_17 ; ULeb128_18 ; ULeb128_19 ; ULeb128_20 ; br_table_items [ br_table_count = br_table_count - 20; ]{}
+
+:""^indent^"br_table" br_table_items  is opc=0x0e; topbit = 0 & v0 ; br_table_items; indent
 	[ br_table_count = 1 + (0 | v0); ]
 { brTableCallOther(); }
-:""^indent^"br_table" br_table_items is opc=0x0e; topbit = 1 & v0; topbit = 0 & v1 ; br_table_items; indent
+:""^indent^"br_table" br_table_items  is opc=0x0e; topbit = 1 & v0; topbit = 0 & v1 ; br_table_items; indent
 	[ br_table_count = 1 + (0 | v0 | ( v1 << 7 )); ]
 { brTableCallOther(); }
-:""^indent^"br_table" br_table_items is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 0 & v2 ; br_table_items; indent
+:""^indent^"br_table" br_table_items  is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 0 & v2 ; br_table_items; indent
 	[ br_table_count = 1 + (0 | v0 | ( v1 << 7 ) | ( v2 << 14 )); ]
 { brTableCallOther(); }
-:""^indent^"br_table" br_table_items is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 1 & v2; topbit = 0 & v3 ; br_table_items; indent
+:""^indent^"br_table" br_table_items  is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 1 & v2; topbit = 0 & v3 ; br_table_items; indent
 	[ br_table_count = 1 + (0 | v0 | ( v1 << 7 ) | ( v2 << 14 ) | ( v3 << 21 )); ]
 { brTableCallOther(); }
-:""^indent^"br_table" br_table_items is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 1 & v2; topbit = 1 & v3; topbit = 0 & v4 ; br_table_items; indent
+:""^indent^"br_table" br_table_items  is opc=0x0e; topbit = 1 & v0; topbit = 1 & v1; topbit = 1 & v2; topbit = 1 & v3; topbit = 0 & v4 ; br_table_items; indent
 	[ br_table_count = 1 + (0 | v0 | ( v1 << 7 ) | ( v2 << 14 ) | ( v3 << 21 ) | ( v4 << 28 )); ]
 { brTableCallOther(); }
