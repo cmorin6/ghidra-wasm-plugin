@@ -1,18 +1,25 @@
 package wasm.analysis.flow;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.bouncycastle.util.Objects;
 
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressRange;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.PcodeOp;
+import ghidra.util.MD5Utilities;
 import wasm.analysis.WasmModuleData;
 import wasm.analysis.flow.MetaInstruction.Type;
 import wasm.format.WasmFuncSignature;
@@ -23,6 +30,11 @@ import wasm.util.WasmInstructionUtil;
 import wasm.util.WasmInstructionUtil.OPCODES;
 
 public class WasmFunctionFlowAnalysis implements Initializable<Function> {
+
+	/**
+	 * Duration in milliseconds between two reset checks
+	 */
+	private static long RESET_CHECK_INTERVAL = TimeUnit.SECONDS.toMillis(3);
 
 	public final static Map<String, Type> callOtherMapping = new HashMap<>();
 
@@ -85,6 +97,8 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 	private Function function;
 	private Map<MetaKey, MetaInstruction> metaInstrsMap = new HashMap<>();
 	private GlobalStack globalStack;
+	private long lastResetCheck = 0;
+	private String bodyHash;
 
 	public MetaInstruction getMetaInstruction(Address address, Type kind) {
 		return metaInstrsMap.get(new MetaKey(address, kind));
@@ -96,16 +110,25 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 
 	@Override
 	public boolean needReset(Function param) {
-		// TODO add some logic to restart analysis if:
-		// * some function bytes changed
-		// * we failed to get instruction before and the instruction is present now
+
+		// don't check too often as this blocks all thread from accessing this instance
+		// and hash computation can be expensive for big functions
+		if (System.currentTimeMillis() < lastResetCheck + RESET_CHECK_INTERVAL) {
+			return false;
+		}
+		lastResetCheck = System.currentTimeMillis();
+
+		if (!Objects.areEqual(bodyHash, computeBodyHash(param))) {
+			return true;
+		}
+
 		return false;
 	}
 
 	@Override
-	public void init(Function function) {
-		program = function.getProgram();
-		this.function = function;
+	public void init(Function func) {
+		program = func.getProgram();
+		this.function = func;
 
 		detectGlobalStack();
 
@@ -120,6 +143,8 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 			metaInstrsMap.put(new MetaKey(mi.location, mi.getType()), mi);
 		}
 
+		lastResetCheck = System.currentTimeMillis();
+		bodyHash = computeBodyHash(func);
 	}
 
 	private List<MetaInstruction> collectMetaInstructions() {
@@ -357,7 +382,7 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 				WasmFuncSignature func = WasmModuleData.get(program).getFunctionSignature(funcidx);
 				callInstr.signature = func;
 				// if we have a global stack make sure to back/restore the corresponding local
-				callInstr.extraLocalSaveIndex= globalStack==null ? -1:globalStack.getLocalIndex();
+				callInstr.extraLocalSaveIndex = globalStack == null ? -1 : globalStack.getLocalIndex();
 				valueStackDepth -= func.getParams().length;
 				valueStackDepth += func.getReturns().length;
 				break;
@@ -367,7 +392,7 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 				WasmFuncType type = WasmModuleData.get(program).getTypeSection().getType(typeIdx);
 				callIndirect.signature = type;
 				// if we have a global stack make sure to back/restore the corresponding local
-				callIndirect.extraLocalSaveIndex= globalStack==null ? -1:globalStack.getLocalIndex();
+				callIndirect.extraLocalSaveIndex = globalStack == null ? -1 : globalStack.getLocalIndex();
 				valueStackDepth--;
 				valueStackDepth -= type.getParamTypes().length;
 				valueStackDepth += type.getReturnTypes().length;
@@ -415,4 +440,37 @@ public class WasmFunctionFlowAnalysis implements Initializable<Function> {
 		return new BrTable(cases);
 	}
 
+	private String computeBodyHash(Function func) {
+		byte[] bodyBytes = getFunctionBytes(func);
+		try {
+			return MD5Utilities.getMD5Hash(new ByteArrayInputStream(bodyBytes));
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private byte[] getFunctionBytes(Function func) {
+		AddressSetView body = func.getBody();
+
+		// first resolve the total bit size
+		long bitSize = 0;
+		for (AddressRange addrRange : body.getAddressRanges()) {
+			bitSize += addrRange.getMaxAddress().getOffset() - addrRange.getMinAddress().getOffset();
+		}
+
+		byte[] funcBytes = new byte[(int) bitSize];
+		long index = 0;
+		for (AddressRange addrRange : body.getAddressRanges()) {
+			Address start = addrRange.getMinAddress();
+			long size = addrRange.getMaxAddress().getOffset() - start.getOffset();
+			try {
+				program.getMemory().getBytes(start, funcBytes, (int) index, (int) size);
+			} catch (MemoryAccessException e) {
+				// we ignore read failure here.
+				// the bytes will remain unitialized for this range
+			}
+			index += size;
+		}
+		return funcBytes;
+	}
 }
