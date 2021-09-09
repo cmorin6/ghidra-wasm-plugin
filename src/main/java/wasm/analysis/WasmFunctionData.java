@@ -25,7 +25,9 @@ public class WasmFunctionData {
 
 	protected boolean imported;
 
-	protected String importName;
+	protected String importModuleName;
+
+	protected String importFunctionName;
 
 	protected String exportName;
 
@@ -36,9 +38,10 @@ public class WasmFunctionData {
 	public static WasmFunctionData fromImport(int index, WasmImportEntry importEntry, Address address) {
 		WasmFunctionData res = new WasmFunctionData();
 		res.index = index;
-		res.entryPoint=address;
+		res.entryPoint = address;
 		res.imported = true;
-		res.importName = importEntry.getName();
+		res.importModuleName = importEntry.getModuleName();
+		res.importFunctionName = importEntry.getFunctionName();
 		res.typeIndex = importEntry.getFunctionType();
 		return res;
 	}
@@ -46,7 +49,7 @@ public class WasmFunctionData {
 	public static WasmFunctionData fromBody(int index, WasmFunctionBody body, Address address, int typeId) {
 		WasmFunctionData res = new WasmFunctionData();
 		res.index = index;
-		res.entryPoint=address;
+		res.entryPoint = address;
 		res.imported = false;
 		res.typeIndex = typeId;
 		res.body = body;
@@ -81,8 +84,16 @@ public class WasmFunctionData {
 		return imported;
 	}
 
-	public String getImportName() {
-		return importName;
+	public String getImportModuleName() {
+		return importModuleName;
+	}
+
+	public String getImportFunctionName() {
+		return importFunctionName;
+	}
+
+	public String getFullImportName() {
+		return importModuleName + "." + importFunctionName;
 	}
 
 	public String getExportName() {

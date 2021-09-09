@@ -65,6 +65,14 @@ public class WasmImportEntry implements StructConverter {
 		return memory_type;
 	}
 
+	public String getModuleName() {
+		return module_str;
+	}
+
+	public String getFunctionName() {
+		return field_str;
+	}
+
 	public String getName() {
 		return module_str + "__" + field_str;
 	}

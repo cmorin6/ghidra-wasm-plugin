@@ -46,6 +46,7 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.mem.MemoryConflictException;
+import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.SymbolUtilities;
 import ghidra.program.model.util.CodeUnitInsertionException;
@@ -182,7 +183,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			res = function.getExportName();
 		}
 		if (res == null) {
-			res = function.getImportName();
+			res = function.getFullImportName();
 		}
 		if (res == null) {
 			res = "unnamed_function_" + function.getIndex();
@@ -335,22 +336,29 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				if (isValidFunctionName(methodName)) {
 					function = program.getFunctionManager().createFunction(methodName, methodAddress,
 							new AddressSet(methodAddress, methodEnd), SourceType.ANALYSIS);
-					program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.ANALYSIS);
 				} else {
 					String validFuncName = extractValidFunctionName(methodName);
 					function = program.getFunctionManager().createFunction(validFuncName, methodAddress,
 							new AddressSet(methodAddress, methodEnd), SourceType.ANALYSIS);
-					program.getSymbolTable().createLabel(methodAddress, validFuncName, SourceType.ANALYSIS);
 					// add the original name as a comment
 					function.setComment(methodName);
 				}
 
-				// apply default function signature
+				// force calling convention
 				function.setCallingConvention("__asmA");
+				
+
+				// set function signature
 				FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), functionData.getFuncType());
 				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig, SourceType.ANALYSIS,
 						false, false);
 				cmd.applyTo(program);
+
+				// create Export symbol
+				if (functionData.getExportName() != null) {
+					program.getSymbolTable().addExternalEntryPoint(methodAddress);
+				}
+
 			}
 
 			// create imported functions
@@ -358,16 +366,24 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			if (!importedFuncs.isEmpty()) {
 				createImportStubBlock(program, importedFuncs.size() * Utils.IMPORT_STUB_LEN, monitor);
 				for (WasmFunctionData functionData : importedFuncs) {
-					String methodName = "import__" + functionData.getImportName();
+					String methodName = getMethodName(functionData);
 					Address methodAddress = functionData.getEntryPoint();
 					Address methodEnd = methodAddress.add(Utils.IMPORT_STUB_LEN - 1);
+					
+					// create function
 					Function function = program.getFunctionManager().createFunction(methodName, methodAddress,
 							new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
 
-					program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
+					// create Import symbol
+					ExternalLocation extLoc = program.getExternalManager().addExtFunction(
+							functionData.getImportModuleName(), functionData.getImportFunctionName(), methodAddress,
+							SourceType.IMPORTED);
+					function.setThunkedFunction(extLoc.getFunction());
 
+					// force calling convention
 					function.setCallingConvention("__asmA");
 
+					// set function signature
 					FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(),
 							functionData.getFuncType());
 					ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
