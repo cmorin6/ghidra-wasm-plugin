@@ -25,8 +25,8 @@ import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
-import wasm.util.ConcurrentInitStore;
 import wasm.util.Initializable;
+import wasm.util.ProgramSingleton;
 
 /**
  * Singleton to reuse metadata parse from module file across analysis tasks.
@@ -36,7 +36,7 @@ import wasm.util.Initializable;
  */
 public class WasmModuleData implements Initializable<Program> {
 
-	private static final ConcurrentInitStore<Program, WasmModuleData> SINGLETON = new ConcurrentInitStore<Program, WasmModuleData>() {
+	private static final ProgramSingleton<WasmModuleData> SINGLETON = new ProgramSingleton<WasmModuleData>() {
 
 		@Override
 		protected WasmModuleData create() {
@@ -69,7 +69,7 @@ public class WasmModuleData implements Initializable<Program> {
 
 	// Only use this from WasmLoader. Use WasmModuleData.get() in analysis.
 	public WasmModuleData(Program prog, WasmModule module) {
-		initInternal(prog,module);
+		initInternal(prog, module);
 	}
 
 	public void init(Program prog) {

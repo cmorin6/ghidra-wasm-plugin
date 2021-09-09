@@ -23,12 +23,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @author cedric
  *
- * @param <InitParam> Parameter type for Initializable objects. This is the storage key.
- * @param <Stored> Type of object stored in this structure.
+ * @param <InitParam> Parameter type for Initializable objects. This is the
+ *                    storage key.
+ * @param <Stored>    Type of object stored in this structure.
  */
 public abstract class ConcurrentInitStore<InitParam, Stored extends Initializable<InitParam>> {
 
-	private Map<Object, StorageWrapper<InitParam, Stored>> store = new ConcurrentHashMap<>();
+	protected Map<Object, StorageWrapper<InitParam, Stored>> store = new ConcurrentHashMap<>();
 
 	public ConcurrentInitStore() {
 
@@ -55,6 +56,7 @@ public abstract class ConcurrentInitStore<InitParam, Stored extends Initializabl
 				wrapper = store.get(key);
 				if (wrapper == null) {
 					wrapper = new StorageWrapper<>(this);
+					onInsert(key, init, wrapper);
 					store.put(key, wrapper);
 				}
 			}
@@ -62,7 +64,11 @@ public abstract class ConcurrentInitStore<InitParam, Stored extends Initializabl
 		return wrapper.getInitialyzedObject(init);
 	}
 
-	private static class StorageWrapper<I, S extends Initializable<I>> {
+	protected void onInsert(Object key, InitParam initParam, StorageWrapper<InitParam, Stored> stored) {
+
+	}
+
+	protected static class StorageWrapper<I, S extends Initializable<I>> {
 		private S storedObject;
 		private ConcurrentInitStore<I, S> store;
 

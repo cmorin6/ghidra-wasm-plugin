@@ -6,9 +6,10 @@ import ghidra.program.model.listing.Program;
 import wasm.analysis.flow.WasmFunctionFlowAnalysis.GlobalStack;
 import wasm.util.ConcurrentInitStore;
 import wasm.util.Initializable;
+import wasm.util.ProgramSingleton;
 
 public class WasmFlowAnalysis implements Initializable<Program> {
-	private static final ConcurrentInitStore<Program, WasmFlowAnalysis> SINGLETON = new ConcurrentInitStore<Program, WasmFlowAnalysis>() {
+	private static final ProgramSingleton<WasmFlowAnalysis> SINGLETON = new ProgramSingleton<WasmFlowAnalysis>() {
 
 		@Override
 		protected WasmFlowAnalysis create() {
