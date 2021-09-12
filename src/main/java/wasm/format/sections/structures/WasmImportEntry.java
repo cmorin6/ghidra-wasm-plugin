@@ -3,7 +3,6 @@ package wasm.format.sections.structures;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
@@ -11,13 +10,13 @@ import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.WasmEnums.WasmExternalKind;
+import wasm.format.commons.WasmList.ListItem;
+import wasm.format.commons.WasmString;
 
-public class WasmImportEntry implements StructConverter {
+public class WasmImportEntry implements ListItem {
 
-	LEB128 module_len;
-	String module_str;
-	LEB128 field_len;
-	String field_str;
+	WasmString moduleName;
+	WasmString fieldName;
 	WasmExternalKind kind;
 
 	LEB128 function_type;
@@ -26,10 +25,8 @@ public class WasmImportEntry implements StructConverter {
 	WasmGlobalType global_type;
 
 	public WasmImportEntry(BinaryReader reader) throws IOException {
-		module_len = LEB128.readUnsignedValue(reader);
-		module_str = reader.readNextAsciiString(module_len.asUInt32());
-		field_len = LEB128.readUnsignedValue(reader);
-		field_str = reader.readNextAsciiString(field_len.asUInt32());
+		moduleName = new WasmString("module_name", reader);
+		fieldName = new WasmString("field_name", reader);
 		kind = WasmExternalKind.values()[reader.readNextByte()];
 		switch (kind) {
 		case EXT_FUNCTION:
@@ -66,24 +63,22 @@ public class WasmImportEntry implements StructConverter {
 	}
 
 	public String getModuleName() {
-		return module_str;
+		return moduleName.getValue();
 	}
 
 	public String getFunctionName() {
-		return field_str;
+		return fieldName.getValue();
 	}
 
 	public String getName() {
-		return module_str + "__" + field_str;
+		return moduleName.getValue() + "__" + fieldName.getValue();
 	}
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("import_" + "_" + module_str + "_" + field_str, 0);
-		structure.add(new ArrayDataType(BYTE, module_len.getLength(), BYTE.getLength()), "module_len", null);
-		structure.add(STRING, module_str.length(), "module_name", null);
-		structure.add(new ArrayDataType(BYTE, field_len.getLength(), BYTE.getLength()), "field_len", null);
-		structure.add(STRING, field_str.length(), "field_name", null);
+		Structure structure = new StructureDataType(getStructName(), 0);
+		moduleName.addToStructure(structure);
+		fieldName.addToStructure(structure);
 		structure.add(BYTE, 1, "kind", null);
 		switch (kind) {
 		case EXT_FUNCTION:
@@ -102,6 +97,11 @@ public class WasmImportEntry implements StructConverter {
 			break;
 		}
 		return structure;
+	}
+
+	@Override
+	public String getStructName() {
+		return "import_" + moduleName.getValue() + "_" + fieldName.getValue();
 	}
 
 }

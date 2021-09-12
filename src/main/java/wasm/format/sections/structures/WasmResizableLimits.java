@@ -3,21 +3,29 @@ package wasm.format.sections.structures;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.format.commons.WasmList.ListItem;
 
-public class WasmResizableLimits implements StructConverter {
+public class WasmResizableLimits implements ListItem {
 
+	int arrayIndex;
+	String entityName;
 	byte flags;
 	LEB128 initial;
 	LEB128 maximum;
 
 	public WasmResizableLimits(BinaryReader reader) throws IOException {
+		this(-1, "limits", reader);
+	}
+
+	public WasmResizableLimits(int arrayIndex, String entityName, BinaryReader reader) throws IOException {
+		this.arrayIndex = arrayIndex;
+		this.entityName = entityName;
 		flags = reader.readNextByte();
 		initial = LEB128.readUnsignedValue(reader);
 		if (flags == 1) {
@@ -27,7 +35,7 @@ public class WasmResizableLimits implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("global", 0);
+		Structure structure = new StructureDataType(getStructName(), 0);
 		structure.add(BYTE, 1, "flags", null);
 		structure.add(new ArrayDataType(BYTE, initial.getLength(), BYTE.getLength()), "initial", null);
 		if (flags == 1) {
@@ -58,6 +66,14 @@ public class WasmResizableLimits implements StructConverter {
 	@Override
 	public String toString() {
 		return "(initial=" + getInitial() + ", max=" + getMaximum() + ")";
+	}
+
+	@Override
+	public String getStructName() {
+		if (arrayIndex == -1) {
+			return entityName;
+		}
+		return entityName + " " + arrayIndex;
 	}
 
 }

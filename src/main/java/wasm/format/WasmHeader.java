@@ -1,8 +1,6 @@
 package wasm.format;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
@@ -10,7 +8,6 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.sections.WasmSection;
 
 public class WasmHeader implements StructConverter {
 

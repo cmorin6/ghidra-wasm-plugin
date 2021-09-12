@@ -3,23 +3,25 @@ package wasm.format.sections.structures;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.format.commons.WasmList.ListItem;
 
-public class WasmFuncType implements StructConverter {
+public class WasmFuncType implements ListItem {
 
+	int arrayIndex;
 	byte form;
 	LEB128 param_count;
 	byte[] param_types = new byte[0];
 	LEB128 return_count;
 	byte[] return_types = new byte[0];
 
-	public WasmFuncType(BinaryReader reader) throws IOException {
+	public WasmFuncType(int arrayIndex, BinaryReader reader) throws IOException {
+		this.arrayIndex = arrayIndex;
 		form = reader.readNextByte();
 		param_count = LEB128.readUnsignedValue(reader);
 		if (param_count.asUInt32() > 0) {
@@ -30,15 +32,15 @@ public class WasmFuncType implements StructConverter {
 			return_types = reader.readNextByteArray(return_count.asUInt32());
 		}
 	}
-	
+
 	public byte[] getParamTypes() {
 		return param_types;
 	}
-	
+
 	public byte[] getReturnTypes() {
 		return return_types;
 	}
-	
+
 	@Override
 	public String toString() {
 		return param_types.length + "T -> " + return_types.length + "T";
@@ -46,7 +48,7 @@ public class WasmFuncType implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("func_type", 0);
+		Structure structure = new StructureDataType(getStructName(), 0);
 		structure.add(BYTE, 1, "form", null);
 		structure.add(new ArrayDataType(BYTE, param_count.getLength(), BYTE.getLength()), "param_count", null);
 		if (param_count.asUInt32() > 0) {
@@ -57,6 +59,11 @@ public class WasmFuncType implements StructConverter {
 			structure.add(new ArrayDataType(BYTE, return_count.asUInt32(), 1), "return_types", null);
 		}
 		return structure;
+	}
+
+	@Override
+	public String getStructName() {
+		return "func_type_" + arrayIndex;
 	}
 
 }

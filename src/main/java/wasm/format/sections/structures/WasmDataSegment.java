@@ -3,7 +3,6 @@ package wasm.format.sections.structures;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
@@ -11,25 +10,25 @@ import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.format.commons.WasmList.ListItem;
 
-public class WasmDataSegment implements StructConverter {
+public class WasmDataSegment implements ListItem {
 
+	private int arrayIndex;
 	private LEB128 index;
 	private LEB128 offset;
 	private long fileOffset;
 	private long offsetCodeSize;
 	private LEB128 size;
 	private byte[] data;
-	
-	
-	public WasmDataSegment(BinaryReader reader) throws IOException {
+
+	public WasmDataSegment(int arrayIndex, BinaryReader reader) throws IOException {
+		this.arrayIndex = arrayIndex;
 		index = LEB128.readUnsignedValue(reader);
 		parseOffset(reader);
 		size = LEB128.readUnsignedValue(reader);
 		data = reader.readNextByteArray(size.asInt32());
 	}
-	
-	
 
 	public long getIndex() {
 		return index.asLong();
@@ -53,7 +52,7 @@ public class WasmDataSegment implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("data_segment_" + index.asUInt32(), 0);
+		Structure structure = new StructureDataType(getStructName(), 0);
 		structure.add(new ArrayDataType(BYTE, index.getLength(), BYTE.getLength()), "count", null);
 		structure.add(new ArrayDataType(BYTE, (int) offsetCodeSize, BYTE.getLength()), "offset", null);
 		structure.add(new ArrayDataType(BYTE, size.getLength(), BYTE.getLength()), "size", null);
@@ -62,10 +61,15 @@ public class WasmDataSegment implements StructConverter {
 		}
 		return structure;
 	}
-	
+
+	@Override
+	public String getStructName() {
+		return "data_segment_" + arrayIndex;
+	}
+
 	protected void parseOffset(BinaryReader reader) throws IOException {
 		long start = reader.getPointerIndex();
-		
+
 		byte offsetOpcode = reader.readNextByte();
 		/*
 		 * Offset expression is an expr, which must be a constant expression evaluating
@@ -96,7 +100,7 @@ public class WasmDataSegment implements StructConverter {
 					break;
 			}
 		}
-		offsetCodeSize = reader.getPointerIndex() -start;
+		offsetCodeSize = reader.getPointerIndex() - start;
 	}
 
 }

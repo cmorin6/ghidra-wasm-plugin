@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.DataType;
-import ghidra.util.exception.DuplicateNameException;
-import wasm.format.WasmConstants;
 import wasm.format.WasmHeader;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;

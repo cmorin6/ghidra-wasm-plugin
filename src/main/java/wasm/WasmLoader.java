@@ -242,7 +242,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 		if (dataWrapper != null) {
 			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
-			for (WasmDataSegment segment : dataSection.getDataSegments()) {
+			for (WasmDataSegment segment : dataSection.getSegments()) {
 				long dataEnd = segment.getOffset() + segment.getData().length;
 				if (memSize < dataEnd) {
 					long increment = dataEnd - memSize;
@@ -267,7 +267,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		// fill memory with data segments
 		if (dataWrapper != null) {
 			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
-			for (WasmDataSegment segment : dataSection.getDataSegments()) {
+			for (WasmDataSegment segment : dataSection.getSegments()) {
 				Address where = memBase.add(segment.getOffset());
 				block.putBytes(where, segment.getData());
 			}
@@ -346,7 +346,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 				// force calling convention
 				function.setCallingConvention("__asmA");
-				
 
 				// set function signature
 				FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), functionData.getFuncType());
@@ -369,7 +368,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 					String methodName = getMethodName(functionData);
 					Address methodAddress = functionData.getEntryPoint();
 					Address methodEnd = methodAddress.add(Utils.IMPORT_STUB_LEN - 1);
-					
+
 					// create function
 					Function function = program.getFunctionManager().createFunction(methodName, methodAddress,
 							new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
