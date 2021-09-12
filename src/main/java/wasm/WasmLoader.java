@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.cmd.function.ApplyFunctionSignatureCmd;
 import ghidra.app.util.MemoryBlockUtils;
@@ -65,6 +66,7 @@ import wasm.format.WasmHeader;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
+import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
@@ -76,9 +78,11 @@ import wasm.format.sections.structures.WasmResizableLimits;
  */
 public class WasmLoader extends AbstractLibrarySupportLoader {
 
+	public static final String WEBASSEMBLY = "WebAssembly";
+
 	@Override
 	public String getName() {
-		return "WebAssembly";
+		return WEBASSEMBLY;
 	}
 
 	@Override
@@ -295,6 +299,23 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return functionName;
 	}
 
+	protected void setupFunctionSignature(Program program, Function function, WasmFunctionData functionData,
+			WasmNameSection section) throws InvalidInputException {
+		// force calling convention
+		function.setCallingConvention("__asmA");
+
+		// set function signature
+		Map<Integer, String> paramNames = null;
+		if (section != null) {
+			paramNames = section.getFunctionLocalNames(functionData.getIndex());
+		}
+		FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), functionData.getFuncType(),
+				paramNames);
+		ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(function.getEntryPoint(), fsig,
+				SourceType.ANALYSIS, false, false);
+		cmd.applyTo(program);
+	}
+
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options, Program program,
 			TaskMonitor monitor, MessageLog log) throws CancelledException, IOException {
@@ -344,14 +365,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 					function.setComment(methodName);
 				}
 
-				// force calling convention
-				function.setCallingConvention("__asmA");
-
-				// set function signature
-				FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(), functionData.getFuncType());
-				ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig, SourceType.ANALYSIS,
-						false, false);
-				cmd.applyTo(program);
+				setupFunctionSignature(program, function, functionData, module.getNameSection());
 
 				// create Export symbol
 				if (functionData.getExportName() != null) {
@@ -379,16 +393,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 							SourceType.IMPORTED);
 					function.setThunkedFunction(extLoc.getFunction());
 
-					// force calling convention
-					function.setCallingConvention("__asmA");
-
-					// set function signature
-					FunctionSignatureImpl fsig = new FunctionSignatureImpl(function.getName(),
-							functionData.getFuncType());
-					ApplyFunctionSignatureCmd cmd = new ApplyFunctionSignatureCmd(methodAddress, fsig,
-							SourceType.ANALYSIS, false, false);
-					cmd.applyTo(program);
-
+					setupFunctionSignature(program, function, functionData, module.getNameSection());
 				}
 			}
 
