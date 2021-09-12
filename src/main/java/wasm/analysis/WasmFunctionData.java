@@ -93,6 +93,9 @@ public class WasmFunctionData {
 	}
 
 	public String getFullImportName() {
+		if (importModuleName == null && importFunctionName == null) {
+			return null;
+		}
 		return importModuleName + "." + importFunctionName;
 	}
 

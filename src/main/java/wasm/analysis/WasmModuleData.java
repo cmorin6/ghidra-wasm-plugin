@@ -156,7 +156,11 @@ public class WasmModuleData implements Initializable<Program> {
 	}
 
 	public void retrieveFunctionTypes() {
-		WasmTypeSection typeSec = (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE).getPayload();
+		WasmSection typeSection = module.getSection(WasmSectionId.SEC_TYPE);
+		if (typeSection == null) {
+			return;
+		}
+		WasmTypeSection typeSec = (WasmTypeSection) typeSection.getPayload();
 		for (WasmFunctionData func : functions) {
 			func.funcType = typeSec.getType(func.typeIndex);
 		}
@@ -164,6 +168,9 @@ public class WasmModuleData implements Initializable<Program> {
 
 	public void retrieveFunctionNames() {
 		WasmNameSection nameSection = module.getNameSection();
+		if (nameSection == null) {
+			return;
+		}
 		for (WasmFunctionData func : functions) {
 			func.name = nameSection.getFunctionName(func.index);
 		}

@@ -5,15 +5,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.format.commons.WasmList.ListItem;
 
-public class WasmFunctionBody implements StructConverter {
+public class WasmFunctionBody implements ListItem {
 
 	private LEB128 body_size;
 	private List<WasmLocalEntry> locals = new ArrayList<WasmLocalEntry>();
@@ -32,18 +32,17 @@ public class WasmFunctionBody implements StructConverter {
 		instructions = reader.readNextByteArray((int) (body_start_offset + body_size.asUInt32() - instructions_offset));
 	}
 
-
 	public long getOffset() {
 		return instructions_offset;
 	}
-	
+
 	public byte[] getInstructions() {
 		return instructions;
 	}
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("function_body_" + instructions_offset, 0);
+		Structure structure = new StructureDataType(getStructName(), 0);
 		structure.add(new ArrayDataType(BYTE, body_size.getLength(), BYTE.getLength()), "body_size", null);
 		structure.add(new ArrayDataType(BYTE, local_count.getLength(), BYTE.getLength()), "local_count", null);
 		if (local_count.asUInt32() > 0) {
@@ -53,5 +52,13 @@ public class WasmFunctionBody implements StructConverter {
 		structure.add(new ArrayDataType(BYTE, instructions.length, BYTE.getLength()), "instructions", null);
 		return structure;
 	}
+	
+	@Override
+	public String getStructName() {
+		return "function_body_" + instructions_offset;
+	}
 
+	public List<WasmLocalEntry> getLocals() {
+		return locals;
+	}
 }
