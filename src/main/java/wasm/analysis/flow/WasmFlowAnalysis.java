@@ -3,6 +3,7 @@ package wasm.analysis.flow;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
+import wasm.analysis.flow.InstructionFlowUtil.InstructionGenerator;
 import wasm.analysis.flow.WasmFunctionFlowAnalysis.GlobalStack;
 import wasm.util.ConcurrentInitStore;
 import wasm.util.Initializable;
@@ -43,7 +44,7 @@ public class WasmFlowAnalysis implements Initializable<Program> {
 		// nothing to do here
 	}
 
-	public static MetaInstruction getMetaInstruction(Program program, Address address, MetaInstruction.Type type) {
+	public static InstructionGenerator getMetaInstruction(Program program, Address address, String callotherName) {
 		WasmFlowAnalysis flowAnalysis = SINGLETON.get(program);
 		if (flowAnalysis == null) {
 			return null;
@@ -56,7 +57,7 @@ public class WasmFlowAnalysis implements Initializable<Program> {
 		if (functionAnalysis == null) {
 			return null;
 		}
-		return functionAnalysis.getMetaInstruction(address, type);
+		return functionAnalysis.getMetaInstruction(address, callotherName);
 	}
 
 	public static GlobalStack getGlobalStack(Program program, Address address) {

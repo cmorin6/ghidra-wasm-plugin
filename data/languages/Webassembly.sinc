@@ -1,5 +1,4 @@
 # sleigh include file for Skeleton language instructions
-
 define token opcode (8)
 	opc = (0,7)
 ;
@@ -22,14 +21,7 @@ define token f32val (32)
 # Macros
 ################################################################
 
-# These pcodeop's have NOP semantics, they just signal to the analyzer to modify the controlStack and valueStack
-define pcodeop pushCallOther;
-define pcodeop popCallOther;
-define pcodeop beginLoopCallOther;
-define pcodeop beginBlockCallOther;
-define pcodeop endCallOther;
-
-# These pcodeop's do not have NOP semantics, they are dynamically injected into by PcodeInjectLibraryWasm
+# These pcodeop's that are dynamically injected into by PcodeInjectLibraryWasm
 define pcodeop brCallOther;
 define pcodeop callCallOther;
 define pcodeop ifCallOther;
@@ -39,28 +31,24 @@ define pcodeop callIndirectCallOther;
 define pcodeop brTableCallOther;
 
 macro push32(val32) {
-	pushCallOther(32:4);
 	val64:8 = zext(val32);
 	SP = SP - 8;
-	*:8 SP = val64; 
+	*:8 SP = val64;
 }
 
 macro pop32(ret32) {
-	popCallOther(32:4);
 	ret32 = *:4 SP;
-	SP = SP + 8; 
+	SP = SP + 8;
 }
 
 macro push64(val64) {
-	pushCallOther(64:4);
 	SP = SP - 8;
-	*:8 SP = val64; 
+	*:8 SP = val64;
 }
 
 macro pop64(ret64) {
-	popCallOther(64:4);
 	ret64 = *:8 SP;
-	SP = SP + 8; 
+	SP = SP + 8;
 }
 
 macro load8(memoffset, dest) {
@@ -119,9 +107,7 @@ macro store64(memoffset, val) {
 	*[ram]:8 addr = val;
 }
 
-
 ################################################################
-
 define pcodeop trap;
 define pcodeop popcnt;
 define pcodeop clz;
@@ -138,124 +124,117 @@ define pcodeop funcref;
 
 attach variables locr [ l0 l1 l2 l3 l4 l5 l6 l7 l8 l9 l10 l11 l12 l13 l14 l15 l16 l17 l18 l19 l20 l21 l22 l23 l24 l25 l26 l27 l28 l29 l30 l31 l32 l33 l34 l35 l36 l37 l38 l39 l40 l41 l42 l43 l44 l45 l46 l47 l48 l49 l50 l51 l52 l53 l54 l55 l56 l57 l58 l59 l60 l61 l62 l63 ];
 
-
-localidx: ULeb128 is ULeb128 {
+localidx: ULeb128  is ULeb128 {
 	export ULeb128;
 }
 
-globalidx: ULeb128 is ULeb128 {
+globalidx: ULeb128  is ULeb128 {
 	export ULeb128;
 }
 
-typeidx: ULeb128 is ULeb128 {
+typeidx: ULeb128  is ULeb128 {
 	export ULeb128;
 }
 
-tableidx: ULeb128 is ULeb128 {
+tableidx: ULeb128  is ULeb128 {
 	export ULeb128;
 }
 
-reftype: "reftype="^bytev is bytev {
+reftype: "reftype="^bytev  is bytev {
 	val:1 = bytev;
 	export val;
 }
 
-memalign: "align="^ULeb128 is ULeb128 {
+memalign: "align="^ULeb128  is ULeb128 {
 	align:8 = ULeb128;
 	export align;
 }
 
-memoffset: "offset="^ULeb128 is ULeb128 {
+memoffset: "offset="^ULeb128  is ULeb128 {
 	off:8 = ULeb128;
 	export off;
 }
 
 ################################################################
-
-
 @include "Indent.sinc"
 
 
 @include "br_table.sinc"
 
-:""^indent^"unreachable" is opc=0x00; indent {
+:""^indent^"unreachable"        is opc=0x00; indent {
 	trap();
 }
 
-:""^indent^"nop" is opc=0x01; indent {}
+:""^indent^"nop"                is opc=0x01; indent {}
 
-:""^inc_indent^"block" "blocktype="^ULeb128 is opc=0x02; ULeb128; $(INC_INDENT) {
-	beginBlockCallOther();
-}
-:""^inc_indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; $(INC_INDENT) {
-	beginLoopCallOther();
-}
-:""^inc_indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; $(INC_INDENT) {
+:""^inc_indent^"block" "blocktype="^ULeb128  is opc=0x02; ULeb128; $(INC_INDENT) {}
+
+:""^inc_indent^"loop" "blocktype="^ULeb128  is opc=0x03; ULeb128; $(INC_INDENT) {}
+
+:""^inc_indent^"if" "blocktype="^ULeb128  is opc=0x04; ULeb128; $(INC_INDENT) {
 	val:4 = 0;
 	pop32(val);
 	if(val != 0) goto inst_next;
 	ifCallOther();
 }
-:""^inc_indent^"else" is opc=0x05; inc_indent {
+:""^inc_indent^"else"           is opc=0x05; inc_indent {
 	elseCallOther();
 }
 
-:""^indent^"end" is opc=0x0b; indent_lvl=0; indent {
+:""^indent^"end"                is opc=0x0b; indent_lvl=0; indent {
 	returnCallOther();
 }
-:""^indent^"end" is opc=0x0b; indent [ indent_lvl = indent_lvl - 1; globalset(inst_next, indent_lvl); ] {
-	endCallOther();
-}
+:""^indent^"end"                is opc=0x0b; indent [ indent_lvl = indent_lvl - 1; globalset(inst_next, indent_lvl); ] {}
 
-:""^indent^"br" ULeb128 is opc=0x0c; ULeb128; indent {
+:""^indent^"br" ULeb128         is opc=0x0c; ULeb128; indent {
 	brCallOther();
 }
-:""^indent^"br_if" ULeb128 is opc=0x0d; ULeb128; indent {
+:""^indent^"br_if" ULeb128      is opc=0x0d; ULeb128; indent {
 	val:4 = 0;
 	pop32(val);
 	if(val == 0) goto inst_next;
 	brCallOther();
 }
-:""^indent^"return" is opc=0x0f; indent {
+:""^indent^"return"             is opc=0x0f; indent {
 	returnCallOther();
 }
-:""^indent^"call" ULeb128 is opc=0x10; ULeb128; indent {
+:""^indent^"call" ULeb128       is opc=0x10; ULeb128; indent {
 	callCallOther();
 }
-:""^indent^"call_indirect" typeidx tableidx is opc=0x11; typeidx; tableidx; indent {
+:""^indent^"call_indirect" typeidx tableidx  is opc=0x11; typeidx; tableidx; indent {
 	callIndirectCallOther();
 }
 
-:""^indent^"ref.null" reftype is opc=0xd0; reftype; indent {
+:""^indent^"ref.null" reftype   is opc=0xd0; reftype; indent {
 	val:8 = 0;
 	push64(val);
 }
-:""^indent^"ref.is_null" is opc=0xd1; indent {
+:""^indent^"ref.is_null"        is opc=0xd1; indent {
 	val:8 = 0;
 	pop64(val);
 	res:4 = zext(val == 0);
 	push32(res);
 }
-:""^indent^"ref.func" ULeb128 is opc=0xd2; ULeb128; indent {
+:""^indent^"ref.func" ULeb128   is opc=0xd2; ULeb128; indent {
 	val:8 = funcref(ULeb128);
 	push64(val);
 }
-:""^indent^"memory.size" is opc=0x3f; indent {
+:""^indent^"memory.size"        is opc=0x3f; indent {
 	val:4 = memory_size();
 	push32(val);
 }
-:""^indent^"memory.grow" is opc=0x40; indent {
+:""^indent^"memory.grow"        is opc=0x40; indent {
 	new_sz:4 = 0;
 	pop32(new_sz);
 	val:4 = memory_grow(new_sz);
 	push32(val);
 }
 
-:""^indent^"drop" is opc=0x1a; indent {
+:""^indent^"drop"               is opc=0x1a; indent {
 	val:8 = 0;
 	pop64(val);
 }
-:""^indent^"select" is opc=0x1b; indent {
+:""^indent^"select"             is opc=0x1b; indent {
 	cond:4 = 0;
 	pop32(cond);
 	val1:8 = 0;
@@ -266,9 +245,9 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	if (cond != 0) goto <true>;
 	res = val1;
 	goto <finish>;
-<true>
+	<true>
 	res = val2;
-<finish>
+	<finish>
 	push64(res);
 }
 
@@ -281,7 +260,7 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 # For each of the "local" instruction we define first a constructor that will match for the 64 first
 # locals and perform the operation directly with the actual local register.
 
-:""^indent^"local.get" locr is opc=0x20; use_locr=0 & locr; indent {
+:""^indent^"local.get" locr     is opc=0x20; use_locr=0 & locr; indent {
 	val:8 = locr;
 	push64(val);
 }
@@ -292,7 +271,7 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 }
 
 
-:""^indent^"local.set" locr is opc=0x21; use_locr=0 & locr ; indent {
+:""^indent^"local.set" locr     is opc=0x21; use_locr=0 & locr ; indent {
 	val:8 = 0;
 	pop64(val);
 	locr = val;
@@ -305,7 +284,7 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 }
 
 
-:""^indent^"local.tee" locr is opc=0x22; use_locr=0 & locr; indent {
+:""^indent^"local.tee" locr     is opc=0x22; use_locr=0 & locr; indent {
 	val:8 = 0;
 	pop64(val);
 	locr = val;
@@ -318,48 +297,48 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	*[register] (localidx:2 * 8) = val;
 	push64(val);
 }
-:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent {
+:""^indent^"global.get" globalidx  is opc=0x23; globalidx; indent {
 	val:8 = *[global] (globalidx:4 * 8);
 	push64(val);
 }
-:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent {
+:""^indent^"global.set" globalidx  is opc=0x24; globalidx; indent {
 	val:8 = 0;
 	pop64(val);
 	*[global] (globalidx:4 * 8) = val;
 }
 
-:""^indent^"table.get" ULeb128 is opc=0x25; ULeb128; indent {
+:""^indent^"table.get" ULeb128  is opc=0x25; ULeb128; indent {
 	val:8 = *[table0] (ULeb128:4 * 8);
 	push64(val);
 }
 
-:""^indent^"table.set" ULeb128 is opc=0x26; ULeb128; indent {
+:""^indent^"table.set" ULeb128  is opc=0x26; ULeb128; indent {
 	val:8 = 0;
 	pop64(val);
 	*[table0] (ULeb128:4 * 8) = val;
 }
 
-:""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; indent {
+:""^indent^"i32.const" SLeb128  is opc=0x41; SLeb128; indent {
 	val:4 = SLeb128:4;
 	push32(val);
 }
 
-:""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; indent {
+:""^indent^"i64.const" SLeb128  is opc=0x42; SLeb128; indent {
 	val:8 = SLeb128:8;
 	push64(val);
 }
 
-:""^indent^"f32.const" f32v is opc=0x43; f32v; indent {
+:""^indent^"f32.const" f32v     is opc=0x43; f32v; indent {
 	val:4 = f32v:4;
 	push32(val);
 }
 
-:""^indent^"f64.const" f64v is opc=0x44; f64v; indent {
+:""^indent^"f64.const" f64v     is opc=0x44; f64v; indent {
 	val:8 = f64v:8;
 	push64(val);
 }
 
-:" " is opc=0xff {
+:" "                            is opc=0xff {
 	trap();
 	return [LR];
 }

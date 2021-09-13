@@ -10,6 +10,13 @@ import ghidra.program.model.listing.Instruction;
 public class WasmInstructionUtil {
 
 	public static interface OPCODES {
+		public final static byte BLOCK = 0x02;
+		public final static byte LOOP = 0x03;
+		public final static byte IF = 0x04;
+		public final static byte ELSE = 0x05;
+
+		public final static byte END = 0xB;
+
 		public final static byte LOCAL_GET = 0x20;
 		public final static byte LOCAL_SET = 0x21;
 		public final static byte LOCAL_TEE = 0x22;

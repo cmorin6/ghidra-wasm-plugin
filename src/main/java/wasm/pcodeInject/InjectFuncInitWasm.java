@@ -1,25 +1,15 @@
 package wasm.pcodeInject;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import ghidra.app.plugin.processors.sleigh.PcodeEmit;
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
-import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.lang.InjectContext;
 import ghidra.program.model.lang.InjectPayload;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.util.xml.SpecXmlUtils;
 import ghidra.xml.XmlElement;
 import ghidra.xml.XmlParseException;
 import ghidra.xml.XmlPullParser;
-import wasm.analysis.flow.MetaInstruction;
 import wasm.analysis.flow.WasmFlowAnalysis;
 import wasm.analysis.flow.WasmFunctionFlowAnalysis.GlobalStack;
 

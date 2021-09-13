@@ -222,29 +222,7 @@
       <pcode inject="uponentry" dynamic="true"/>
     </prototype>
   </default_proto>
-  <callotherfixup targetop="popCallOther">
-  	<pcode dynamic="true">
-  	  <input name="bitsize_push" />
-  	</pcode>
-  </callotherfixup>
-  <callotherfixup targetop="pushCallOther">
-  	<pcode dynamic="true">
-  	  <input name="bitsize_push" />
-  	</pcode>
-  </callotherfixup>
   <callotherfixup targetop="brCallOther">
-  	<pcode dynamic="true">
-  	</pcode>
-  </callotherfixup>
-  <callotherfixup targetop="beginLoopCallOther">
-  	<pcode dynamic="true">
-  	</pcode>
-  </callotherfixup>
-  <callotherfixup targetop="beginBlockCallOther">
-  	<pcode dynamic="true">
-  	</pcode>
-  </callotherfixup>
-  <callotherfixup targetop="endCallOther">
   	<pcode dynamic="true">
   	</pcode>
   </callotherfixup>
