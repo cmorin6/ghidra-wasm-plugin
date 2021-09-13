@@ -9,6 +9,8 @@ import wasm.format.sections.structures.WasmExportEntry.WasmExternalKind;
 
 public class WasmExportSection extends WasmList<WasmExportEntry> implements WasmPayload {
 
+	public static final String SECTION_NAME = ".export";
+
 	public WasmExportSection(BinaryReader reader) throws IOException {
 		super(reader, (i, r) -> new WasmExportEntry(i, r));
 	}
@@ -24,7 +26,7 @@ public class WasmExportSection extends WasmList<WasmExportEntry> implements Wasm
 
 	@Override
 	public String getName() {
-		return ".export";
+		return SECTION_NAME;
 	}
 
 }

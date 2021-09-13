@@ -6,11 +6,12 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
-import ghidra.app.util.bin.MemoryByteProvider;
+import ghidra.app.util.bin.InputStreamByteProvider;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryBlock;
 import wasm.file.WasmModule;
+import wasm.file.WasmModule.WasmSectionKey;
 import wasm.format.Utils;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmFuncSignature;
@@ -19,8 +20,8 @@ import wasm.format.sections.WasmExportSection;
 import wasm.format.sections.WasmFunctionSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmNameSection;
+import wasm.format.sections.WasmPayload;
 import wasm.format.sections.WasmSection;
-import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
@@ -31,8 +32,6 @@ import wasm.util.ProgramSingleton;
 /**
  * Singleton to reuse metadata parse from module file across analysis tasks.
  * 
- * @author cedric
- *
  */
 public class WasmModuleData implements Initializable<Program> {
 
@@ -50,8 +49,13 @@ public class WasmModuleData implements Initializable<Program> {
 	}
 
 	protected Program program;
-	protected WasmModule module;
-	// TODO: initialized flag
+
+	protected WasmNameSection nameSection;
+	protected WasmTypeSection typeSection;
+	protected WasmFunctionSection funcSection;
+	protected WasmImportSection importSection;
+	protected WasmCodeSection codeSection;
+	protected WasmExportSection exportSection;
 
 	/**
 	 * List of WasmFunctionData corresponding to all functions defined in this
@@ -69,32 +73,15 @@ public class WasmModuleData implements Initializable<Program> {
 
 	// Only use this from WasmLoader. Use WasmModuleData.get() in analysis.
 	public WasmModuleData(Program prog, WasmModule module) {
-		initInternal(prog, module);
+		program = prog;
+		initSections(module);
+		initInternal();
 	}
 
 	public void init(Program prog) {
-		Memory mem = prog.getMemory();
-		Address moduleStart = mem.getBlock(".module").getStart();
-		ByteProvider memByteProvider = new MemoryByteProvider(mem, moduleStart);
-		BinaryReader memBinaryReader = new BinaryReader(memByteProvider, true);
-		try {
-			initInternal(prog, new WasmModule(memBinaryReader));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	protected void initInternal(Program prog, WasmModule mod) {
-		this.program = prog;
-		this.module = mod;
-		retrieveFunctions();
-		retrieveFunctionTypes();
-		retrieveFunctionNames();
-		retrieveFunctionExportName();
-	}
-
-	public WasmModule getModule() {
-		return module;
+		program = prog;
+		initSections();
+		initInternal();
 	}
 
 	public WasmFuncSignature getFunctionSignature(int index) {
@@ -102,10 +89,6 @@ public class WasmModuleData implements Initializable<Program> {
 			return null;
 		}
 		return functions.get(index).getFuncSignature();
-	}
-
-	public WasmTypeSection getTypeSection() {
-		return (WasmTypeSection) module.getSection(WasmSectionId.SEC_TYPE).getPayload();
 	}
 
 	public List<WasmFunctionData> getFunctions() {
@@ -120,11 +103,58 @@ public class WasmModuleData implements Initializable<Program> {
 		return realFunctions;
 	}
 
+	public WasmNameSection getNameSection() {
+		return nameSection;
+	}
+
+	public WasmTypeSection getTypeSection() {
+		return typeSection;
+	}
+
+	public WasmFunctionSection getFuncSection() {
+		return funcSection;
+	}
+
+	public WasmImportSection getImportSection() {
+		return importSection;
+	}
+
+	public WasmCodeSection getCodeSection() {
+		return codeSection;
+	}
+
+	public WasmExportSection getExportSection() {
+		return exportSection;
+	}
+
+	protected void initSections() {
+		nameSection = loadSectionFromBlock(WasmNameSection.SECTION_NAME, WasmNameSection.class);
+		typeSection = loadSectionFromBlock(WasmTypeSection.SECTION_NAME, WasmTypeSection.class);
+		funcSection = loadSectionFromBlock(WasmFunctionSection.SECTION_NAME, WasmFunctionSection.class);
+		importSection = loadSectionFromBlock(WasmImportSection.SECTION_NAME, WasmImportSection.class);
+		codeSection = loadSectionFromBlock(WasmCodeSection.SECTION_NAME, WasmCodeSection.class);
+		exportSection = loadSectionFromBlock(WasmExportSection.SECTION_NAME, WasmExportSection.class);
+	}
+
+	protected void initSections(WasmModule module) {
+		nameSection = module.getNameSection();
+		typeSection = module.getSectionPayload(WasmSectionKey.TYPE);
+		funcSection = module.getSectionPayload(WasmSectionKey.FUNCTION);
+		importSection = module.getSectionPayload(WasmSectionKey.IMPORT);
+		codeSection = module.getSectionPayload(WasmSectionKey.CODE);
+		exportSection = module.getSectionPayload(WasmSectionKey.EXPORT);
+	}
+
+	protected void initInternal() {
+		retrieveFunctions();
+		retrieveFunctionTypes();
+		retrieveFunctionNames();
+		retrieveFunctionExportName();
+	}
+
 	protected void retrieveFunctions() {
 		// functions index start with imported functions
-		WasmSection importSec = module.getSection(WasmSectionId.SEC_IMPORT);
-		if (importSec != null) {
-			WasmImportSection importSection = (WasmImportSection) importSec.getPayload();
+		if (importSection != null) {
 			for (WasmImportEntry entry : importSection.getEntries()) {
 				if (entry.getKind() == WasmExternalKind.EXT_FUNCTION) {
 					int index = functions.size();
@@ -137,16 +167,12 @@ public class WasmModuleData implements Initializable<Program> {
 		}
 
 		// then function defined in the function section
-		WasmFunctionSection funcSec = (WasmFunctionSection) module.getSection(WasmSectionId.SEC_FUNCTION).getPayload();
-		WasmSection codeSec = module.getSection(WasmSectionId.SEC_CODE);
-		WasmCodeSection codeSection = (WasmCodeSection) codeSec.getPayload();
-		long code_offset = codeSec.getPayloadOffset();
 		for (int i = 0; i < codeSection.getFunctions().size(); ++i) {
 			int index = functions.size();
 			WasmFunctionBody body = codeSection.getFunctions().get(i);
 			// TODO: make sure funcSec and type sec always have the same size
-			int typeId = funcSec.getTypeIdx(i);
-			long method_offset = code_offset + body.getOffset();
+			int typeId = funcSection.getTypeIdx(i);
+			long method_offset = body.getOffset();
 			Address entrypoint = Utils.toAddr(program, Utils.METHOD_ADDRESS + method_offset);
 			WasmFunctionData func = WasmFunctionData.fromBody(index, body, entrypoint, typeId);
 			functions.add(func);
@@ -156,18 +182,15 @@ public class WasmModuleData implements Initializable<Program> {
 	}
 
 	public void retrieveFunctionTypes() {
-		WasmSection typeSection = module.getSection(WasmSectionId.SEC_TYPE);
 		if (typeSection == null) {
 			return;
 		}
-		WasmTypeSection typeSec = (WasmTypeSection) typeSection.getPayload();
 		for (WasmFunctionData func : functions) {
-			func.funcType = typeSec.getType(func.typeIndex);
+			func.funcType = typeSection.getType(func.typeIndex);
 		}
 	}
 
 	public void retrieveFunctionNames() {
-		WasmNameSection nameSection = module.getNameSection();
 		if (nameSection == null) {
 			return;
 		}
@@ -177,16 +200,36 @@ public class WasmModuleData implements Initializable<Program> {
 	}
 
 	public void retrieveFunctionExportName() {
-		WasmSection exports = module.getSection(WasmSectionId.SEC_EXPORT);
-		if (exports == null) {
+		if (exportSection == null) {
 			return;
 		}
-		WasmExportSection exportSection = (WasmExportSection) exports.getPayload();
 		for (WasmFunctionData func : functions) {
 			WasmExportEntry entry = exportSection.findMethod(func.index);
 			if (entry != null) {
 				func.exportName = entry.getName();
 			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <T extends WasmPayload> T loadSectionFromBlock(String blockName, Class<T> clazz) {
+		MemoryBlock block = program.getMemory().getBlock(blockName);
+		if (block == null) {
+			return null;
+		}
+
+		try (ByteProvider bp = new InputStreamByteProvider(block.getData(), block.getSize())) {
+			WasmSection section = new WasmSection(new BinaryReader(bp, true));
+			WasmPayload res = section.getPayload();
+			if (res == null) {
+				return null;
+			}
+			if (!clazz.isInstance(res)) {
+				return null;
+			}
+			return (T) res;
+		} catch (IOException e) {
+			return null;
 		}
 	}
 

@@ -8,6 +8,8 @@ import wasm.format.sections.structures.WasmFuncType;
 
 public class WasmTypeSection extends WasmList<WasmFuncType> implements WasmPayload {
 
+	public static final String SECTION_NAME = ".type";
+
 	public WasmTypeSection(BinaryReader reader) throws IOException {
 		super(reader, (i, r) -> new WasmFuncType(i, r));
 	}
@@ -22,6 +24,6 @@ public class WasmTypeSection extends WasmList<WasmFuncType> implements WasmPaylo
 
 	@Override
 	public String getName() {
-		return ".type";
+		return SECTION_NAME;
 	}
 }

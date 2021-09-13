@@ -59,6 +59,7 @@ import ghidra.util.task.TaskMonitor;
 import wasm.analysis.WasmFunctionData;
 import wasm.analysis.WasmModuleData;
 import wasm.file.WasmModule;
+import wasm.file.WasmModule.WasmSectionKey;
 import wasm.format.Utils;
 import wasm.format.WasmConstants;
 import wasm.format.WasmEnums.WasmExternalKind;
@@ -68,7 +69,6 @@ import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
-import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
@@ -167,20 +167,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private void addModuleSection(Program program, long length, TaskMonitor monitor, InputStream reader, MessageLog log)
-			throws AddressOverflowException {
-		boolean r = true;
-		boolean w = false;
-		boolean x = false;
-		String MODULE_SOURCE_NAME = "Wasm Module";
-		Address start = program.getAddressFactory().getDefaultAddressSpace().getAddress(Utils.MODULE_BASE);
-		MemoryBlock moduleBlock = MemoryBlockUtils.createInitializedBlock(program, false, ".module", start, reader,
-				length, "The full file contents of the Wasm module", MODULE_SOURCE_NAME, r, w, x, log, monitor);
-		// disable all accesses on the module section to prevent auto analysis do
-		// recover strings and addresses in it.
-		moduleBlock.setPermissions(false, false, false);
-	}
-
 	private String getMethodName(WasmFunctionData function) {
 		String res = function.getName();
 		if (res == null) {
@@ -197,9 +183,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	public long getWasmMemorySize(Program program, WasmModule module, MessageLog log) {
 		// look for memory definition
-		WasmSection linearMemWrapper = module.getSection(WasmSectionId.SEC_LINEARMEMORY);
-		if (linearMemWrapper != null) {
-			WasmLinearMemorySection memSection = (WasmLinearMemorySection) linearMemWrapper.getPayload();
+		WasmLinearMemorySection memSection = module.getSectionPayload(WasmSectionKey.LINEARMEMORY);
+		if (memSection != null) {
 			List<WasmResizableLimits> memDefs = memSection.getMemoryDefinitions();
 			if (memDefs != null && !memDefs.isEmpty()) {
 				// note: only consider the first entry as the current Wasm specification
@@ -212,9 +197,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 
 		// otherwise lookup imports
-		WasmSection importWrapper = module.getSection(WasmSectionId.SEC_IMPORT);
-		if (importWrapper != null) {
-			WasmImportSection importSection = (WasmImportSection) importWrapper.getPayload();
+		WasmImportSection importSection = module.getSectionPayload(WasmSectionKey.IMPORT);
+		if (importSection != null) {
 			for (WasmImportEntry importEntry : importSection.getEntries()) {
 				if (importEntry.getKind() == WasmExternalKind.EXT_MEMORY) {
 					WasmResizableLimits memDef = importEntry.getMemoryDefinition();
@@ -238,14 +222,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		long memSize = getWasmMemorySize(program, module, log);
 
 		// ensure that there is sufficient space for data
-		WasmSection dataWrapper = module.getSection(WasmSectionId.SEC_DATA);
-		if (dataWrapper == null && memSize == -1) {
+		WasmDataSection dataSection = module.getSectionPayload(WasmSectionKey.DATA);
+		if (dataSection == null && memSize == -1) {
 			// no memory defined for this program
 			return;
 		}
 
-		if (dataWrapper != null) {
-			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
+		if (dataSection != null) {
 			for (WasmDataSegment segment : dataSection.getSegments()) {
 				long dataEnd = segment.getOffset() + segment.getData().length;
 				if (memSize < dataEnd) {
@@ -269,8 +252,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		block.setExecute(false);
 
 		// fill memory with data segments
-		if (dataWrapper != null) {
-			WasmDataSection dataSection = (WasmDataSection) dataWrapper.getPayload();
+		if (dataSection != null) {
 			for (WasmDataSegment segment : dataSection.getSegments()) {
 				Address where = memBase.add(segment.getOffset());
 				block.putBytes(where, segment.getData());
@@ -330,8 +312,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			BinaryReader reader = new BinaryReader(provider, true);
 			WasmModule module = new WasmModule(reader);
-
-			addModuleSection(program, provider.length(), monitor, provider.getInputStream(0), log);
 
 			createMethodByteCodeBlock(program, length, monitor);
 			markupHeader(program, module.getHeader(), monitor, inputStream, log);

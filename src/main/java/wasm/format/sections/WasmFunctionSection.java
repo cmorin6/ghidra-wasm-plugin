@@ -14,6 +14,8 @@ import ghidra.util.exception.DuplicateNameException;
 
 public class WasmFunctionSection implements WasmPayload {
 
+	public static final String SECTION_NAME = ".function";
+
 	private LEB128 count;
 	private List<LEB128> types = new ArrayList<>();
 
@@ -23,11 +25,11 @@ public class WasmFunctionSection implements WasmPayload {
 			types.add(LEB128.readUnsignedValue(reader));
 		}
 	}
-	
+
 	public int getTypeIdx(int funcidx) {
 		return (int) types.get(funcidx).asLong();
 	}
-	
+
 	public int getTypeCount() {
 		return types.size();
 	}
@@ -43,7 +45,7 @@ public class WasmFunctionSection implements WasmPayload {
 
 	@Override
 	public String getName() {
-		return ".function";
+		return SECTION_NAME;
 	}
 
 }

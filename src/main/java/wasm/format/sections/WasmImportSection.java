@@ -10,6 +10,8 @@ import wasm.format.sections.structures.WasmImportEntry;
 
 public class WasmImportSection extends WasmList<WasmImportEntry> implements WasmPayload {
 
+	public static final String SECTION_NAME = ".import";
+
 	public WasmImportSection(BinaryReader reader) throws IOException {
 		super(reader, (i, r) -> new WasmImportEntry(r));
 	}
@@ -24,7 +26,7 @@ public class WasmImportSection extends WasmList<WasmImportEntry> implements Wasm
 
 	@Override
 	public String getName() {
-		return ".import";
+		return SECTION_NAME;
 	}
 
 	public int getImportedFunctionCount() {

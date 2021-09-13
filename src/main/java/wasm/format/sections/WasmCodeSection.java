@@ -9,6 +9,8 @@ import wasm.format.sections.structures.WasmFunctionBody;
 
 public class WasmCodeSection extends WasmList<WasmFunctionBody> implements WasmPayload {
 
+	public static final String SECTION_NAME = ".code";
+
 	public WasmCodeSection(BinaryReader reader) throws IOException {
 		super(reader, (i, r) -> new WasmFunctionBody(r));
 	}
@@ -19,7 +21,7 @@ public class WasmCodeSection extends WasmList<WasmFunctionBody> implements WasmP
 
 	@Override
 	public String getName() {
-		return ".code";
+		return SECTION_NAME;
 	}
 
 }
