@@ -3,10 +3,10 @@ package wasm.format;
 import java.util.HashMap;
 
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.Float4DataType;
-import ghidra.program.model.data.Float8DataType;
+import ghidra.program.model.data.LongDataType;
 import ghidra.program.model.data.Undefined4DataType;
-import ghidra.program.model.data.Undefined8DataType;
 
 public class WasmEnums {
 	public enum WasmExternalKind {
@@ -40,13 +40,13 @@ public class WasmEnums {
 			case f32:
 				return Float4DataType.dataType;
 			case f64:
-				return Float8DataType.dataType;
+				return DoubleDataType.dataType;
 			case i32:
 				return Undefined4DataType.dataType;
 			case i64:
-				return Undefined8DataType.dataType;
+				return LongDataType.dataType;
 			default:
-				return Undefined8DataType.dataType;
+				return Undefined4DataType.dataType;
 			}
 		}
 	}

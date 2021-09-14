@@ -1,4 +1,4 @@
-package wasm;
+package wasm.analysis;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -122,6 +122,68 @@ public class FunctionSignatureImpl implements FunctionSignature {
 		} else if (!returnType.equals(other.returnType))
 			return false;
 		return true;
+	}
+
+	/**
+	 * Merges this FunctionSignature with a previously existing one. <br/>
+	 * The resulting FunctionSignature will add or remove parameters to match the
+	 * type WasmType definition. <br/>
+	 * Non default parameter names will be kept and DataType will only be updated if
+	 * the size mismatches with the WasmType definition.
+	 * 
+	 * @param other
+	 * @return True if there is a change to be applied by the resulting
+	 *         FunctionSignature after merge.
+	 */
+	public boolean merge(FunctionSignature other) {
+		boolean shouldApply = false;
+		for (int i = 0; i < arguments.length; i++) {
+			// if we have more arguments than the other signature
+			// we should apply this.
+			if (i >= other.getArguments().length) {
+				shouldApply = true;
+				continue;
+			}
+			ParameterDefinition pd = arguments[i];
+			ParameterDefinition pdo = other.getArguments()[i];
+			// if size mismatch apply the signature
+			if (pdo.getLength() != pd.getLength()) {
+				shouldApply = true;
+				// if there is already a non default name for the parameter
+				String pname = getRealParamName(i, pdo.getName());
+				// keep it
+				if (pname != null) {
+					pd.setName(pname);
+				}
+			}
+			// otherwise we copy the argument from the other signature
+			else {
+				arguments[i] = pdo;
+			}
+		}
+
+		// if the other signature has more elements, truncate
+		if (other.getArguments().length > arguments.length) {
+			shouldApply = true;
+		}
+
+		if (other.getReturnType().getLength() != returnType.getLength()) {
+			shouldApply = true;
+		} else {
+			returnType = other.getReturnType();
+		}
+
+		return shouldApply;
+	}
+
+	protected String getRealParamName(int index, String paramName) {
+		if (paramName == null) {
+			return null;
+		}
+		if (("param_" + index).contentEquals(paramName)) {
+			return null;
+		}
+		return paramName;
 	}
 
 }
