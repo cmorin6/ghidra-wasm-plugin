@@ -14,6 +14,8 @@ public class WasmInstructionUtil {
 		public final static byte LOOP = 0x03;
 		public final static byte IF = 0x04;
 		public final static byte ELSE = 0x05;
+		
+		public final static byte CALL = 0x10;
 
 		public final static byte END = 0xB;
 
