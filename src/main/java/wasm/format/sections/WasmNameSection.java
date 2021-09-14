@@ -44,7 +44,7 @@ public class WasmNameSection extends WasmCustomSection {
 
 	public String getFunctionName(int idx) {
 		WasmNamePayload funcNames = getNamePayload(NAME_TYPES.FUNCTION_NAMES);
-		if (funcNames == null && funcNames instanceof WasmFunctionNamesPayload) {
+		if (funcNames == null || !(funcNames instanceof WasmFunctionNamesPayload)) {
 			return null;
 		}
 		return ((WasmFunctionNamesPayload) funcNames).getName(idx);
@@ -52,7 +52,7 @@ public class WasmNameSection extends WasmCustomSection {
 
 	public Map<Integer, String> getFunctionLocalNames(int idx) {
 		WasmNamePayload funcNames = getNamePayload(NAME_TYPES.LOCAL_NAMES);
-		if (funcNames == null && funcNames instanceof WasmLocalNamesPayload) {
+		if (funcNames == null || !(funcNames instanceof WasmLocalNamesPayload)) {
 			return null;
 		}
 		return ((WasmLocalNamesPayload) funcNames).getLocalNames(idx);

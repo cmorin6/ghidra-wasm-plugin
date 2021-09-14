@@ -2,7 +2,9 @@ package wasm.analysis;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
@@ -67,6 +69,8 @@ public class WasmModuleData implements Initializable<Program> {
 
 	protected List<WasmFunctionData> realFunctions = new ArrayList<>();
 
+	protected Map<Address, WasmFunctionData> functionsByAddress = new HashMap<>();
+
 	public WasmModuleData() {
 		// needed for singleton
 	}
@@ -127,6 +131,10 @@ public class WasmModuleData implements Initializable<Program> {
 		return exportSection;
 	}
 
+	public WasmFunctionData getFunctionByEntryPoint(Address entryPoint) {
+		return functionsByAddress.get(entryPoint);
+	}
+
 	protected void initSections() {
 		nameSection = loadSectionFromBlock(WasmNameSection.SECTION_NAME, WasmNameSection.class);
 		typeSection = loadSectionFromBlock(WasmTypeSection.SECTION_NAME, WasmTypeSection.class);
@@ -150,6 +158,9 @@ public class WasmModuleData implements Initializable<Program> {
 		retrieveFunctionTypes();
 		retrieveFunctionNames();
 		retrieveFunctionExportName();
+		for (WasmFunctionData fd : functions) {
+			functionsByAddress.put(fd.getEntryPoint(), fd);
+		}
 	}
 
 	protected void retrieveFunctions() {
@@ -181,7 +192,7 @@ public class WasmModuleData implements Initializable<Program> {
 
 	}
 
-	public void retrieveFunctionTypes() {
+	protected void retrieveFunctionTypes() {
 		if (typeSection == null) {
 			return;
 		}
@@ -190,7 +201,7 @@ public class WasmModuleData implements Initializable<Program> {
 		}
 	}
 
-	public void retrieveFunctionNames() {
+	protected void retrieveFunctionNames() {
 		if (nameSection == null) {
 			return;
 		}
@@ -199,7 +210,7 @@ public class WasmModuleData implements Initializable<Program> {
 		}
 	}
 
-	public void retrieveFunctionExportName() {
+	protected void retrieveFunctionExportName() {
 		if (exportSection == null) {
 			return;
 		}

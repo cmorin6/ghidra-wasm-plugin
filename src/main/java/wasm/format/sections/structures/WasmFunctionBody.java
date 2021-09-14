@@ -11,6 +11,7 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.format.WasmEnums.ValType;
 import wasm.format.commons.WasmList.ListItem;
 
 public class WasmFunctionBody implements ListItem {
@@ -21,15 +22,18 @@ public class WasmFunctionBody implements ListItem {
 	private long instructions_offset;
 	private byte[] instructions;
 
+	private List<ValType> localTypes;
+
 	public WasmFunctionBody(BinaryReader reader) throws IOException {
 		body_size = LEB128.readUnsignedValue(reader);
 		int body_start_offset = (int) reader.getPointerIndex();
 		local_count = LEB128.readUnsignedValue(reader);
-		for (int i = 0; i < local_count.asUInt32(); ++i) {
+		for (int i = 0; i < local_count.asUInt32(); i++) {
 			locals.add(new WasmLocalEntry(reader));
 		}
 		instructions_offset = reader.getPointerIndex();
 		instructions = reader.readNextByteArray((int) (body_start_offset + body_size.asUInt32() - instructions_offset));
+		buildLocalTypes();
 	}
 
 	public long getOffset() {
@@ -52,13 +56,23 @@ public class WasmFunctionBody implements ListItem {
 		structure.add(new ArrayDataType(BYTE, instructions.length, BYTE.getLength()), "instructions", null);
 		return structure;
 	}
-	
+
 	@Override
 	public String getStructName() {
 		return "function_body_" + instructions_offset;
 	}
 
-	public List<WasmLocalEntry> getLocals() {
-		return locals;
+	protected void buildLocalTypes() {
+		localTypes = new ArrayList<>();
+		for (WasmLocalEntry entry : locals) {
+			ValType type = ValType.fromByte(entry.getType());
+			for (int i = 0; i < entry.getCount(); i++) {
+				localTypes.add(type);
+			}
+		}
+	}
+
+	public List<ValType> getLocalTypes() {
+		return localTypes;
 	}
 }

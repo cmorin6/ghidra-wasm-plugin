@@ -13,27 +13,32 @@ import ghidra.util.exception.DuplicateNameException;
 
 public class WasmLocalEntry implements StructConverter {
 
-	
 	public enum WasmLocalType {
-		LOCAL_INT,
-		LOCAL_BOOL,
-		LOCAL_FLOAT
+		LOCAL_INT, LOCAL_BOOL, LOCAL_FLOAT
 	}
-	
+
 	private LEB128 count;
 	private LEB128 type;
-	
+
 	public WasmLocalEntry(BinaryReader reader) throws IOException {
 		count = LEB128.readUnsignedValue(reader);
 		type = LEB128.readUnsignedValue(reader);
 	}
-	
+
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = new StructureDataType("local_entry", 0);
 		structure.add(new ArrayDataType(BYTE, count.getLength(), BYTE.getLength()), "body_size", null);
 		structure.add(new ArrayDataType(BYTE, type.getLength(), BYTE.getLength()), "local_count", null);
 		return structure;
+	}
+
+	public int getCount() {
+		return (int) count.asLong();
+	}
+
+	public int getType() {
+		return (int) type.asLong();
 	}
 
 }
