@@ -29,7 +29,6 @@ import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.opinion.AbstractLibrarySupportLoader;
 import ghidra.app.util.opinion.LoadSpec;
 import ghidra.framework.model.DomainObject;
-import ghidra.framework.store.LockException;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressSet;
@@ -42,9 +41,7 @@ import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
-import ghidra.program.model.mem.MemoryConflictException;
 import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.SymbolUtilities;
@@ -57,21 +54,13 @@ import ghidra.util.task.TaskMonitor;
 import wasm.analysis.WasmFunctionData;
 import wasm.analysis.WasmModuleData;
 import wasm.file.WasmModule;
-import wasm.file.WasmModule.WasmSectionKey;
 import wasm.format.Utils;
 import wasm.format.WasmConstants;
-import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
 import wasm.format.sections.WasmCustomSection;
-import wasm.format.sections.WasmDataSection;
-import wasm.format.sections.WasmImportSection;
-import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
-import wasm.format.sections.structures.WasmDataSegment;
-import wasm.format.sections.structures.WasmImportEntry;
-import wasm.format.sections.structures.WasmResizableLimits;
 
 /**
  * TODO: Provide class-level documentation that describes what this loader does.
@@ -194,85 +183,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return res;
 	}
 
-	public long getWasmMemorySize(Program program, WasmModule module, MessageLog log) {
-		// look for memory definition
-		WasmLinearMemorySection memSection = module.getSectionPayload(WasmSectionKey.LINEARMEMORY);
-		if (memSection != null) {
-			List<WasmResizableLimits> memDefs = memSection.getMemoryDefinitions();
-			if (memDefs != null && !memDefs.isEmpty()) {
-				// note: only consider the first entry as the current Wasm specification
-				// only support one memory block
-				WasmResizableLimits memDef = memDefs.get(0);
-				long finalSize = memDef.getAllocSize() * WasmConstants.WASM_MEM_BLOCK_SIZE;
-				log.appendMsg("Found memory definition " + memDef + " => 0x" + Long.toHexString(finalSize));
-				return finalSize;
-			}
-		}
-
-		// otherwise lookup imports
-		WasmImportSection importSection = module.getSectionPayload(WasmSectionKey.IMPORT);
-		if (importSection != null) {
-			for (WasmImportEntry importEntry : importSection.getEntries()) {
-				if (importEntry.getKind() == WasmExternalKind.EXT_MEMORY) {
-					WasmResizableLimits memDef = importEntry.getMemoryDefinition();
-					if (memDef != null) {
-						long finalSize = memDef.getAllocSize() * WasmConstants.WASM_MEM_BLOCK_SIZE;
-						log.appendMsg("Recovered memory definition from imports " + memDef + " => 0x"
-								+ Long.toHexString(finalSize));
-						return finalSize;
-					}
-				}
-			}
-		}
-
-		return -1;
-	}
-
-	public void initMemory(Program program, WasmModule module, TaskMonitor monitor, MessageLog log)
-			throws LockException, IllegalArgumentException, MemoryConflictException, AddressOverflowException,
-			CancelledException, MemoryAccessException {
-
-		long memSize = getWasmMemorySize(program, module, log);
-
-		// ensure that there is sufficient space for data
-		WasmDataSection dataSection = module.getSectionPayload(WasmSectionKey.DATA);
-		if (dataSection == null && memSize == -1) {
-			// no memory defined for this program
-			return;
-		}
-
-		if (dataSection != null) {
-			for (WasmDataSegment segment : dataSection.getSegments()) {
-				long dataEnd = segment.getOffset() + segment.getData().length;
-				if (memSize < dataEnd) {
-					long increment = dataEnd - memSize;
-					long added = (increment / WasmConstants.WASM_MEM_BLOCK_SIZE) * WasmConstants.WASM_MEM_BLOCK_SIZE;
-					if (increment % WasmConstants.WASM_MEM_BLOCK_SIZE != 0) {
-						added += WasmConstants.WASM_MEM_BLOCK_SIZE;
-					}
-					memSize += added;
-					log.appendMsg("Increased memory size to match data definition => " + Long.toHexString(memSize));
-				}
-			}
-		}
-
-		// create memory block
-		Address memBase = program.getAddressFactory().getAddressSpace("ram").getAddress(0);
-		MemoryBlock block = program.getMemory().createInitializedBlock("memory", memBase, memSize, (byte) 0x00, monitor,
-				false);
-		block.setRead(true);
-		block.setWrite(true);
-		block.setExecute(false);
-
-		// fill memory with data segments
-		if (dataSection != null) {
-			for (WasmDataSegment segment : dataSection.getSegments()) {
-				Address where = memBase.add(segment.getOffset());
-				block.putBytes(where, segment.getData());
-			}
-		}
-	}
-
 	protected boolean isValidFunctionName(String functionName) {
 		try {
 			SymbolUtilities.validateName(functionName);
@@ -314,7 +224,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			markupSections(program, module, monitor, inputStream, log);
 			monitor.setMessage("Wasm Loader: Create byte code");
 
-			initMemory(program, module, monitor, log);
+			WasmMemoryLoader.initMemory(program, module, monitor, log);
 
 			WasmModuleData moduleData = new WasmModuleData(program, module);
 

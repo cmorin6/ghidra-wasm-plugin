@@ -50,6 +50,14 @@ public class WasmNameSection extends WasmCustomSection {
 		return ((ListIndexNamePayload) funcNames).getName(idx);
 	}
 
+	public String getGlobalName(int idx) {
+		WasmNamePayload names = getNamePayload(NAME_TYPES.GLOBAL_NAMES);
+		if (names == null || !(names instanceof ListIndexNamePayload)) {
+			return null;
+		}
+		return ((ListIndexNamePayload) names).getName(idx);
+	}
+
 	public Map<Integer, String> getFunctionLocalNames(int idx) {
 		WasmNamePayload funcNames = getNamePayload(NAME_TYPES.LOCAL_NAMES);
 		if (funcNames == null || !(funcNames instanceof WasmLocalNamesPayload)) {

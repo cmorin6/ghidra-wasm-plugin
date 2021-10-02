@@ -102,6 +102,10 @@ public class WasmNameSegment implements StructConverter {
 		public String getName(int index) {
 			return namesMap.get(index);
 		}
+		
+		public HashMap<Integer, String> getNamesMap() {
+			return namesMap;
+		}
 
 	}
 
