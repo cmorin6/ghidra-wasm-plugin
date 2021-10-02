@@ -62,10 +62,13 @@ import wasm.format.Utils;
 import wasm.format.WasmConstants;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
+import wasm.format.sections.WasmCustomSection;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
+import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
+import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
@@ -156,11 +159,24 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		boolean x = true;
 		String BLOCK_SOURCE_NAME = "Wasm Section";
 		for (WasmSection section : module.getSections()) {
-			Address start = program.getAddressFactory().getDefaultAddressSpace()
-					.getAddress(Utils.HEADER_BASE + section.getSectionOffset());
-			MemoryBlockUtils.createInitializedBlock(program, false, section.getPayload().getName(), start, reader,
-					section.getSectionSize(), "", BLOCK_SOURCE_NAME, r, w, x, log, monitor);
-			createData(program, program.getListing(), start, section.toDataType());
+			if (section.getId() == WasmSectionId.SEC_CUSTOM && !(section.getPayload() instanceof WasmNameSection)) {
+				// Special case for Custom section to remove their section header.
+				// this allows to reuse standard parsing of Dwarf sections.
+				WasmCustomSection customSection = (WasmCustomSection) section.getPayload();
+				Address start = Utils.toAddr(program,
+						Utils.HEADER_BASE + section.getPayloadOffset() + customSection.getContentOffset());
+				// discard section header bytes
+				int headerSize = (int) ((section.getPayloadOffset() - section.getSectionOffset())
+						+ customSection.getContentOffset());
+				reader.readNBytes(headerSize);
+				MemoryBlockUtils.createInitializedBlock(program, false, customSection.getName(), start, reader,
+						customSection.getContents().length, "", BLOCK_SOURCE_NAME, r, w, x, log, monitor);
+			} else {
+				Address start = Utils.toAddr(program, Utils.HEADER_BASE + section.getSectionOffset());
+				MemoryBlockUtils.createInitializedBlock(program, false, section.getPayload().getName(), start, reader,
+						section.getSectionSize(), "", BLOCK_SOURCE_NAME, r, w, x, log, monitor);
+				createData(program, program.getListing(), start, section.toDataType());
+			}
 		}
 	}
 

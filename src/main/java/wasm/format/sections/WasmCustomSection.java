@@ -10,10 +10,12 @@ import wasm.format.commons.WasmString;
 
 public class WasmCustomSection implements WasmPayload {
 	protected WasmString name;
-	byte[] contents;
+	protected long contentOffset;
+	protected byte[] contents;
 
 	protected WasmCustomSection(WasmString name, BinaryReader reader, int contentlen) throws IOException {
 		this.name = name;
+		contentOffset = reader.getPointerIndex();
 		contents = reader.readNextByteArray(contentlen);
 	}
 
@@ -27,7 +29,6 @@ public class WasmCustomSection implements WasmPayload {
 		if ("name".equals(name.getValue())) {
 			return new WasmNameSection(name, reader, contentlen);
 		}
-
 		return new WasmCustomSection(name, reader, contentlen);
 	}
 
@@ -42,5 +43,14 @@ public class WasmCustomSection implements WasmPayload {
 	public String getName() {
 		return name.getValue();
 	}
+
+	public long getContentOffset() {
+		return contentOffset;
+	}
+
+	public byte[] getContents() {
+		return contents;
+	}
+
 
 }

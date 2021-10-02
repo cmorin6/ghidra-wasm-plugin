@@ -15,14 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * <br/>
  * Before returning an existing object, a call to
  * {@link wasm.util.Initializable#needReset(Object) Initializable.needReset()}
- * is made to check whether the current object is obsolete. If it is a new
+ * is made to check whether the current object is obsolete. If it is, a new
  * instance is initialized blocking current access for this key until this new
  * instance is fully initialized and stored as a replacement for the obsolete
  * one.
  * 
  * 
- * @author cedric
- *
  * @param <InitParam> Parameter type for Initializable objects. This is the
  *                    storage key.
  * @param <Stored>    Type of object stored in this structure.
