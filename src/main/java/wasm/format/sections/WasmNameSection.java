@@ -11,8 +11,8 @@ import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.commons.WasmString;
 import wasm.format.sections.structures.WasmNameSegment;
+import wasm.format.sections.structures.WasmNameSegment.ListIndexNamePayload;
 import wasm.format.sections.structures.WasmNameSegment.NAME_TYPES;
-import wasm.format.sections.structures.WasmNameSegment.WasmFunctionNamesPayload;
 import wasm.format.sections.structures.WasmNameSegment.WasmLocalNamesPayload;
 import wasm.format.sections.structures.WasmNameSegment.WasmNamePayload;
 
@@ -44,10 +44,10 @@ public class WasmNameSection extends WasmCustomSection {
 
 	public String getFunctionName(int idx) {
 		WasmNamePayload funcNames = getNamePayload(NAME_TYPES.FUNCTION_NAMES);
-		if (funcNames == null || !(funcNames instanceof WasmFunctionNamesPayload)) {
+		if (funcNames == null || !(funcNames instanceof ListIndexNamePayload)) {
 			return null;
 		}
-		return ((WasmFunctionNamesPayload) funcNames).getName(idx);
+		return ((ListIndexNamePayload) funcNames).getName(idx);
 	}
 
 	public Map<Integer, String> getFunctionLocalNames(int idx) {

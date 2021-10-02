@@ -44,16 +44,16 @@ public class WasmNameSegment implements StructConverter {
 			payload = new WasmModuleNamePayload(subReader);
 			break;
 		case NAME_TYPES.FUNCTION_NAMES:
-			payload = new WasmFunctionNamesPayload(subReader);
+			payload = new ListIndexNamePayload("func",subReader);
 			break;
 		case NAME_TYPES.LOCAL_NAMES:
 			payload = new WasmLocalNamesPayload(subReader);
 			break;
 		case NAME_TYPES.GLOBAL_NAMES:
-			payload = new WasmGlobalNamesPayload(subReader);
+			payload = new ListIndexNamePayload("global",subReader);
 			break;
 		case NAME_TYPES.DATA_NAMES:
-			payload = new WasmDataNamesPayload(subReader);
+			payload = new ListIndexNamePayload("data",subReader);
 			break;
 
 		default:
@@ -103,27 +103,6 @@ public class WasmNameSegment implements StructConverter {
 			return namesMap.get(index);
 		}
 
-	}
-
-	public static class WasmGlobalNamesPayload extends ListIndexNamePayload {
-
-		public WasmGlobalNamesPayload(BinaryReader reader) throws IOException {
-			super("global", reader);
-		}
-	}
-
-	public static class WasmFunctionNamesPayload extends ListIndexNamePayload {
-
-		public WasmFunctionNamesPayload(BinaryReader reader) throws IOException {
-			super("func", reader);
-		}
-	}
-
-	public static class WasmDataNamesPayload extends ListIndexNamePayload {
-
-		public WasmDataNamesPayload(BinaryReader reader) throws IOException {
-			super("data", reader);
-		}
 	}
 
 	public static class WasmModuleNamePayload extends WasmString implements WasmNamePayload {
